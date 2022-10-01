@@ -11,20 +11,20 @@ protein family domain databases and large-scale annotation pipelines,
 including [Pfam](http://pfam.xfam.org) and other members of the
 [InterPro Consortium](http://www.ebi.ac.uk/interpro/).
 
-To obtain HMMER releases, please visit [hmmer.org](http://hmmer.org).
+__This is a fork of hmmer3.3.2 and easel 0.48 patched to support the foldseek (3di) alphabet__
 
+
+__The original hmmer and easel repositories are here__
 To participate in HMMER development, visit us at
 [github](https://github.com/EddyRivasLab/hmmer).  HMMER development
 depends on the Easel library, also at
 [github](https://github.com/EddyRivasLab/easel).
 
 
-### to download and build the current source code release:
 
 ```
-   % wget http://eddylab.org/software/hmmer/hmmer.tar.gz
-   % tar zxf hmmer.tar.gz
-   % cd hmmer-3.3.2
+   % git clone git@github.com:seanrjohnson/hmmer3di.git 
+   % autoconf
    % ./configure --prefix /your/install/path
    % make
    % make check                 # optional: run automated tests
@@ -45,45 +45,6 @@ To get started after installation, see the Tutorial section in the
 HMMER User's Guide (Userguide.pdf).
 
 
+# Guide for adding a new alphabet 
 
-### to clone a copy of HMMER3 source from github:
-
-The tarball way, above, is a better way to install HMMER (it includes
-a precompiled Userguide.pdf, for example), but you can also clone our
-github repo. You need to clone both the HMMER and Easel repositories,
-as follows:
-
-```
-   % git clone https://github.com/EddyRivasLab/hmmer
-   % cd hmmer
-   % git clone https://github.com/EddyRivasLab/easel
-   % autoconf
-```
-
-and to build:
-
-```bash
-   % ./configure
-   % make
-```
-
-Our [git workflow](https://github.com/EddyRivasLab/hmmer/wiki/Git-workflow)
-includes three main branches:
-
- * **master** is the stable branch for HMMER3 releases (including when
-   H3 is released as a library inside Infernal)
- * **develop** is the HMMER3 development branch
- * **h4-develop** is the HMMER4 development branch.
-
-To build the most recent official release, leave both HMMER and Easel
-on their default **master** branch.  To contribute to HMMER3
-development, you want to be on the **develop** branches. If you want
-to send us a pull request on GitHub, please base your changes on our
-**develop** branches.
-
-
-### to report a problem:
-
-Visit our
-[issues tracking page at github](https://github.com/EddyRivasLab/hmmer/issues).
 
