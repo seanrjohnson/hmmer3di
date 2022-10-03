@@ -1,0 +1,25 @@
+\begin{cchunk}
+#include "easel.h"
+#include "esl_dmatrix.h"
+
+int main(void)
+{
+  ESL_DMATRIX *A, *B, *C;
+
+  A = esl_dmatrix_Create(4,4);
+  B = esl_dmatrix_Create(4,4);
+  C = esl_dmatrix_Create(4,4);
+  
+  esl_dmatrix_SetIdentity(A);
+  esl_dmatrix_Copy(A, B);
+
+  esl_dmx_Multiply(A,B,C);
+
+  esl_dmatrix_Dump(stdout, C, NULL, NULL);
+
+  esl_dmatrix_Destroy(A);
+  esl_dmatrix_Destroy(B);
+  esl_dmatrix_Destroy(C);
+  return 0;
+}
+\end{cchunk}

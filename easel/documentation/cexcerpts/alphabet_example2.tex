@@ -1,0 +1,29 @@
+\begin{cchunk}
+#include "easel.h"
+#include "esl_alphabet.h"
+int main(void)
+{ 
+  ESL_ALPHABET *a;
+
+  /* 1. Create the base alphabet structure. */
+  a = esl_alphabet_CreateCustom("ACDEFGHIKLMNOPQRSTUVWY-BJZX~", 22, 28);
+
+  /* 2. Set your equivalences in the input map.  */
+  esl_alphabet_SetEquiv(a, '.', '-');     /* allow . as a gap character too */
+
+  /* 3. After all synonyms are set, (optionally) make map case-insensitive. */
+  esl_alphabet_SetCaseInsensitive(a);       /* allow lower case input too */
+
+  /* 4. Define your optional degeneracy codes in the alphabet, one at a time.
+   *    The 'any' character X was automatically set up.  */
+  esl_alphabet_SetDegeneracy(a, 'B', "DN"); /* read B as {D|N} */
+  esl_alphabet_SetDegeneracy(a, 'J', "IL"); /* read B as {I|L} */
+  esl_alphabet_SetDegeneracy(a, 'Z', "QE"); /* read Z as {Q|E} */
+
+  /* 5. (do your stuff) */
+
+  /* 6. Remember to free it when you're done with it. */
+  esl_alphabet_Destroy(a);
+  return 0;
+}
+\end{cchunk}

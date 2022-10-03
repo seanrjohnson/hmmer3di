@@ -1,0 +1,1087 @@
+\begin{sreapi}
+\hypertarget{func:esl_msa_Create()}
+{\item[ESL\_MSA * esl\_msa\_Create(int nseq, int64\_t alen)]}
+
+Creates and initializes an \ccode{ESL\_MSA} object, and returns a
+pointer to it. 
+
+If caller already knows the dimensions of the alignment,
+both \ccode{nseq} and \ccode{alen}, then \ccode{msa = esl\_msa\_Create(nseq,
+alen)} allocates the whole thing at once. The MSA's
+\ccode{nseq} and \ccode{alen} fields are set accordingly, and the
+caller doesn't have to worry about setting them; it can
+just fill in \ccode{aseq}.
+
+If caller doesn't know the dimensions of the alignment
+(for example, when parsing an alignment file), then
+\ccode{nseq} is taken to be an initial allocation size, and
+\ccode{alen} must be -1. \ccode{alen=-1} is used as a flag for a
+"growable" MSA. For example, the call \ccode{msa =
+esl\_msa\_Create(16, -1)}.  allocates internally for an
+initial block of 16 sequences, but without allocating
+any space for individual sequences.  This allocation can
+be expanded (by doubling) by calling \ccode{esl\_msa\_Expand()}.
+A created \ccode{msa} can only be \ccode{\_Expand()}'ed if \ccode{alen} is
+-1.
+
+In a growable alignment, caller becomes responsible for
+memory allocation of each individual \ccode{aseq[i]}. Caller
+is also responsible for setting \ccode{nseq} and \ccode{alen} when
+it is done parsing and creating the new MSA. In
+particular, the \ccode{esl\_msa\_Destroy()} function relies on
+\ccode{nseq} to know how many individual sequences are
+allocated.
+
+Returns pointer to new MSA object, w/ all values initialized.
+
+Throws \ccode{NULL} on allocation failure.          
+
+
+\hypertarget{func:esl_msa_Expand()}
+{\item[int esl\_msa\_Expand(ESL\_MSA *msa)]}
+
+Double the current sequence allocation in \ccode{msa}.
+Typically used when we're reading an alignment sequentially 
+from a file, so we don't know nseq 'til we're done.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on reallocation failure; \ccode{msa} is undamaged,
+and the caller may attempt to recover from the error.
+
+Throws \ccode{eslEINVAL} if \ccode{msa} is not growable: its \ccode{alen}
+field must be -1 to be growable.
+
+
+
+\hypertarget{func:esl_msa_Copy()}
+{\item[int esl\_msa\_Copy(const ESL\_MSA *msa, ESL\_MSA *new\_msa)]}
+
+Makes a copy of \ccode{msa} in \ccode{new\_msa}. Caller has
+already allocated \ccode{new\_msa} to hold an MSA of
+at least \ccode{msa->nseq} sequences and \ccode{msa->alen}
+columns.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure. In this case, \ccode{new\_msa}
+was only partially constructed, and should be treated
+as corrupt.
+
+
+\hypertarget{func:esl_msa_Clone()}
+{\item[ESL\_MSA * esl\_msa\_Clone(const ESL\_MSA *msa)]}
+
+Make a duplicate of \ccode{msa}, in newly 
+allocated space. 
+
+Returns a pointer to the newly allocated clone.
+Caller is responsible for free'ing it.
+
+Throws \ccode{NULL} on allocation error.
+
+
+\hypertarget{func:esl_msa_Sizeof()}
+{\item[size\_t esl\_msa\_Sizeof(ESL\_MSA *msa)]}
+
+Returns the approximate size of an \ccode{ESL\_MSA}, in
+bytes. Approximate, because it counts used data size
+(the size of the alignment) rather than alloced size
+(the actual memory required by the structure),
+and the structure may be overallocated (e.g.  by
+\ccode{esl\_msa\_Expand()}.) That is, returns the minimum
+size required to store the data.
+
+(We may want to distinguish between true allocated
+size versus minimum size in the future.)
+
+
+\hypertarget{func:esl_msa_Destroy()}
+{\item[void esl\_msa\_Destroy(ESL\_MSA *msa)]}
+
+Destroys \ccode{msa}.
+
+
+
+\hypertarget{func:esl_msa_GuessAlphabet()}
+{\item[int esl\_msa\_GuessAlphabet(const ESL\_MSA *msa, int *ret\_type)]}
+
+Guess whether the sequences in the \ccode{msa} are
+\ccode{eslDNA}, \ccode{eslRNA}, or \ccode{eslAMINO}, and return
+that guess in \ccode{*ret\_type}.
+
+The determination is made based on the classifications
+of the individual sequences in the alignment. At least
+one sequence must contain ten residues or more to be
+classified. If one or more sequences is called
+\ccode{eslAMINO} and one or more is called \ccode{eslDNA}/\ccode{eslRNA},
+the alignment's alphabet is considered to be
+indeterminate (\ccode{eslUNKNOWN}). If some sequences are
+\ccode{eslDNA} and some are \ccode{eslRNA}, the alignment is called
+\ccode{eslDNA}; this should cause no problems, because Easel
+reads U as a synonym for T in DNA sequence anyway.
+
+Tested on Pfam 21.0 and Rfam 7.0, this routine correctly
+classified all 8957 Pfam alignments as protein, and 503
+Rfam alignments as RNA (both seed and full alignments).
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_type} is set
+to \ccode{eslDNA}, \ccode{eslRNA}, or \ccode{eslAMINO}. 
+
+Returns \ccode{eslENOALPHABET} and sets \ccode{*ret\_type} to
+\ccode{eslUNKNOWN} if the alphabet cannot be reliably guessed.
+
+
+
+\hypertarget{func:esl_msa_CreateDigital()}
+{\item[ESL\_MSA * esl\_msa\_CreateDigital(const ESL\_ALPHABET *abc, int nseq, int64\_t alen)]}
+
+Same as \ccode{esl\_msa\_Create()}, except the returned MSA is configured
+for a digital alignment using internal alphabet \ccode{abc}, instead of 
+a text alignment.
+
+Internally, this means the \ccode{ax} field is allocated instead of
+the \ccode{aseq} field, and the \ccode{eslMSA\_DIGITAL} flag is raised.
+
+Returns pointer to new MSA object, w/ all values initialized.
+Note that \ccode{msa->nseq} is initialized to 0, even though space
+is allocated.
+
+Throws NULL on allocation failure.          
+
+
+
+\hypertarget{func:esl_msa_Digitize()}
+{\item[int esl\_msa\_Digitize(const ESL\_ALPHABET *abc, ESL\_MSA *msa, char *errbuf)]}
+
+Given an alignment \ccode{msa} in text mode, convert it to
+digital mode, using alphabet \ccode{abc}.
+
+Internally, the \ccode{ax} digital alignment field is filled,
+the \ccode{aseq} text alignment field is destroyed and free'd,
+a copy of the alphabet pointer is kept in the msa's
+\ccode{abc} reference, and the \ccode{eslMSA\_DIGITAL} flag is raised
+in \ccode{flags}.
+
+Because \ccode{esl\_msa\_Digitize()} may be called on
+unvalidated user data, \ccode{errbuf} may be passed, for
+capturing an informative error message. For example, in
+reading alignments from files, invalid characters in the
+alignment are caught at the digitization step.
+
+Returns \ccode{eslOK} on success;
+\ccode{eslEINVAL} if one or more sequences contain invalid characters
+that can't be digitized. If this happens, the \ccode{msa} is returned
+unaltered - left in text mode, with \ccode{aseq} as it was. (This is
+a normal error, because \ccode{msa->aseq} may be user input that we 
+haven't validated yet.)
+
+Throws \ccode{eslEMEM} on allocation failure; in this case, state of \ccode{msa} may be 
+wedged, and it should only be destroyed, not used.
+
+
+\hypertarget{func:esl_msa_Textize()}
+{\item[int esl\_msa\_Textize(ESL\_MSA *msa)]}
+
+Given an alignment \ccode{msa} in digital mode, convert it
+to text mode.
+
+Internally, the \ccode{aseq} text alignment field is filled, the
+\ccode{ax} digital alignment field is destroyed and free'd, the
+msa's \ccode{abc} digital alphabet reference is nullified, and 
+the \ccode{eslMSA\_DIGITAL} flag is dropped in \ccode{flags}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+\ccode{eslECORRUPT} if one or more of the digitized alignment strings
+contain invalid characters.
+
+
+\hypertarget{func:esl_msa_ConvertDegen2X()}
+{\item[int esl\_msa\_ConvertDegen2X(ESL\_MSA *msa)]}
+
+Convert all the degenerate residue codes in digital
+MSA \ccode{msa} to the code for "unknown residue" (maximum
+degeneracy); for example, X for protein, N for 
+nucleic acid. 
+
+This is handy when you need to be compatible with
+software that can't deal with unusual residue codes.
+For example, WU-BLAST can't deal with O (pyrrolysine)
+codes. 
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{msa} isn't in digital mode. 
+(We only know how to interpret the alphabet in digital
+mode. In text mode, letters are just letters.)
+
+
+\hypertarget{func:esl_msa_SetName()}
+{\item[int esl\_msa\_SetName(ESL\_MSA *msa, const char *s, esl\_pos\_t n)]}
+
+Sets the name of the msa \ccode{msa} to string \ccode{s},
+of length \ccode{n}. 
+
+If \ccode{s} is a NUL-terminated string, \ccode{n} is optional; if
+the length is unknown, pass \ccode{n=-1}. \ccode{s} may also be a
+memory line, non-NUL terminated, in which case \ccode{n} is
+required.
+
+\ccode{s} can also be \ccode{NULL} because the MSA name is an
+optional field. (In this case, \ccode{n} is irrelevant and
+ignored.)
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_msa_SetDesc()}
+{\item[int esl\_msa\_SetDesc(ESL\_MSA *msa, const char *s, esl\_pos\_t n)]}
+
+Sets the optional description line of the msa \ccode{msa} to
+string \ccode{s} of length \ccode{n}.
+
+If \ccode{s} is a NUL-terminated string, \ccode{n} is optional; if
+the length is unknown, pass \ccode{n=-1}. \ccode{s} may also be a
+memory line, non-NUL terminated, in which case \ccode{n} is
+required.
+
+\ccode{s} can also be \ccode{NULL} because the MSA description is an
+optional field. (In this case, \ccode{n} is irrelevant and
+ignored.)
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_msa_SetAccession()}
+{\item[int esl\_msa\_SetAccession(ESL\_MSA *msa, const char *s, esl\_pos\_t n)]}
+
+Sets accession field of the msa \ccode{msa} to string \ccode{s} of
+length \ccode{n}.
+
+If \ccode{s} is a NUL-terminated string, \ccode{n} is optional; if
+the length is unknown, pass \ccode{n=-1}. \ccode{s} may also be a
+memory line, non-NUL terminated, in which case \ccode{n} is
+required.
+
+\ccode{s} can also be \ccode{NULL} because the MSA accession is an
+optional field. (In this case, \ccode{n} is irrelevant and
+ignored.)
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_msa_SetAuthor()}
+{\item[int esl\_msa\_SetAuthor(ESL\_MSA *msa, const char *s, esl\_pos\_t n)]}
+
+Sets the author string in \ccode{msa} to string \ccode{s} of
+length \ccode{n}.
+
+If \ccode{s} is a NUL-terminated string, \ccode{n} is optional; if
+the length is unknown, pass \ccode{n=-1}. \ccode{s} may also be a
+memory line, non-NUL terminated, in which case \ccode{n} is
+required.
+
+\ccode{s} can also be \ccode{NULL} because the MSA author is an
+optional field. (In this case, \ccode{n} is irrelevant and
+ignored.)
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_msa_SetSeqName()}
+{\item[int esl\_msa\_SetSeqName(ESL\_MSA *msa, int idx, const char *s, esl\_pos\_t n)]}
+
+Set the name of sequence number \ccode{idx} in \ccode{msa}
+to string \ccode{s} of length \ccode{n}.
+
+If \ccode{s} is a NUL-terminated string, \ccode{n} is optional; if
+the length is unknown, pass \ccode{n=-1}. \ccode{s} may also be a
+memory line, non-NUL terminated, in which case \ccode{n} is
+required.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+\ccode{eslEINCONCEIVABLE} on coding errors.
+
+
+
+\hypertarget{func:esl_msa_SetSeqAccession()}
+{\item[int esl\_msa\_SetSeqAccession(ESL\_MSA *msa, int idx, const char *s, esl\_pos\_t n)]}
+
+Set the accession of sequence number \ccode{idx} in \ccode{msa} to
+string \ccode{s} of length \ccode{n}.
+
+If \ccode{s} is a NUL-terminated string, \ccode{n} is optional; if
+the length is unknown, pass \ccode{n=-1}. \ccode{s} may also be a
+memory line, non-NUL terminated, in which case \ccode{n} is
+required.
+
+\ccode{s} can also be \ccode{NULL} because a seq accession is an
+optional field. (In this case, \ccode{n} is irrelevant and
+ignored.)
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+\ccode{eslEINCONCEIVABLE} on coding errors.
+
+
+\hypertarget{func:esl_msa_SetSeqDescription()}
+{\item[int esl\_msa\_SetSeqDescription(ESL\_MSA *msa, int idx, const char *s, esl\_pos\_t n)]}
+
+Set the description of sequence number \ccode{idx} in \ccode{msa} to
+string \ccode{s} of length \ccode{n}.
+
+If \ccode{s} is a NUL-terminated string, \ccode{n} is optional; if
+the length is unknown, pass \ccode{n=-1}. \ccode{s} may also be a
+memory line, non-NUL terminated, in which case \ccode{n} is
+required.
+
+\ccode{s} can also be \ccode{NULL} because a seq accession is an
+optional field. (In this case, \ccode{n} is irrelevant and
+ignored.)
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+\ccode{eslEINCONCEIVABLE} on coding error
+
+
+\hypertarget{func:esl_msa_SetDefaultWeights()}
+{\item[int esl\_msa\_SetDefaultWeights(ESL\_MSA *msa)]}
+
+Set all the sequence weights in \ccode{msa} to default,
+1.0. Drop the \ccode{eslMSA\_HASWGTS} flag in \ccode{msa->flags}.
+
+The \ccode{ESL\_MSA} data structure has its \ccode{wgt} values
+initialized to -1.0, by create and expand functions, as
+a special value for "unset yet". File format parsers use
+this to tell when a weight is mistakenly set twice, or
+not at all. However, when an \ccode{msa} is used, you're
+allowed to assume that \ccode{wgt} is valid even if the
+\ccode{eslMSA\_HASWGTS} flag is down. So all creators of new
+MSAs (file format parsers, for example) must assure that
+\ccode{msa->wgt} is set correctly, even if the file format
+doesn't include weights. This function gives parsers
+(and other MSA creators) a quick way to do this.
+
+
+\hypertarget{func:esl_msa_FormatName()}
+{\item[int esl\_msa\_FormatName(ESL\_MSA *msa, const char *name, ...)]}
+
+Sets the name of the msa \ccode{msa} using \ccode{name}, where 
+\ccode{name} is a \ccode{printf()}-style format with
+arguments; for example, \ccode{esl\_msa\_FormatName(msa, "random\%d", i)}.
+
+\ccode{name} can be \ccode{NULL}, because the MSA name is an
+optional field; in which case any existing name in
+the \ccode{msa} is erased.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error;
+\ccode{eslESYS} if a \ccode{*printf()} library call fails.
+
+
+\hypertarget{func:esl_msa_FormatDesc()}
+{\item[int esl\_msa\_FormatDesc(ESL\_MSA *msa, const char *desc, ...)]}
+
+Format the description line of the msa \ccode{msa} using \ccode{desc}.
+where \ccode{desc} is a \ccode{printf()}-style format with
+arguments.
+For example, \ccode{esl\_msa\_FormatDesc(msa, "sample \%d", i)}.
+
+As a special case, \ccode{desc} may be \ccode{NULL}, to facilitate
+handling of optional annotation.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error;
+\ccode{eslESYS} if a \ccode{*printf()} library call fails.
+
+
+\hypertarget{func:esl_msa_FormatAccession()}
+{\item[int esl\_msa\_FormatAccession(ESL\_MSA *msa, const char *acc, ...)]}
+
+Sets accession number of the msa \ccode{msa} using \ccode{acc}, 
+where \ccode{acc} is a \ccode{printf()}-style format with arguments.
+For example, \ccode{esl\_msa\_FormatAccession(msa, "PF\%06d", i)}.
+
+As a special case, \ccode{acc} may be \ccode{NULL}, to facilitate
+handling of optional annotation.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error;
+\ccode{eslESYS} if a \ccode{*printf()} library call fails.
+
+
+\hypertarget{func:esl_msa_FormatAuthor()}
+{\item[int esl\_msa\_FormatAuthor(ESL\_MSA *msa, const char *author, ...)]}
+
+Sets the author string in \ccode{msa}, using an \ccode{author} string
+and arguments in same format as \ccode{printf()} would take.
+
+As a special case, \ccode{author} may be \ccode{NULL}, to facilitate
+handling of optional annotation.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error;
+\ccode{eslESYS} if a \ccode{*printf()} library call fails.
+
+
+\hypertarget{func:esl_msa_FormatSeqName()}
+{\item[int esl\_msa\_FormatSeqName(ESL\_MSA *msa, int idx, const char *name, ...)]}
+
+Set the name of sequence number \ccode{idx} in \ccode{msa}
+to \ccode{name}, where \ccode{name} is a \ccode{printf()}
+style format and arguments.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{name} is \ccode{NULL};
+\ccode{eslEMEM} on allocation error;
+\ccode{eslESYS} if a \ccode{*printf()} library call fails.
+
+
+
+\hypertarget{func:esl_msa_FormatSeqAccession()}
+{\item[int esl\_msa\_FormatSeqAccession(ESL\_MSA *msa, int idx, const char *acc, ...)]}
+
+Set the accession of sequence number \ccode{idx} in \ccode{msa} to
+\ccode{acc}, where \ccode{acc} is a \ccode{printf()} style format and
+arguments.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error;
+\ccode{eslESYS} if a \ccode{*printf()} library call fails.
+
+
+\hypertarget{func:esl_msa_FormatSeqDescription()}
+{\item[int esl\_msa\_FormatSeqDescription(ESL\_MSA *msa, int idx, const char *desc, ...)]}
+
+Set the description of sequence number \ccode{idx} in \ccode{msa} to
+\ccode{desc}, where \ccode{desc} may be a \ccode{printf()} style format and
+arguments.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error;
+\ccode{eslESYS} if a \ccode{*printf()} library call fails.
+
+
+\hypertarget{func:esl_msa_AddComment()}
+{\item[int esl\_msa\_AddComment(ESL\_MSA *msa, char *p, esl\_pos\_t n)]}
+
+Add an (unparsed) comment line to the MSA structure, 
+allocating as necessary.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_msa_AddGF()}
+{\item[int esl\_msa\_AddGF(ESL\_MSA *msa, char *tag, esl\_pos\_t taglen, char *value, esl\_pos\_t vlen)]}
+
+Add an unparsed \verb+#=GF+ markup line to the MSA, 
+allocating as necessary. \ccode{tag} is the GF markup 
+tag; \ccode{value} is the text associated w/ that tag.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_msa_AddGS()}
+{\item[int esl\_msa\_AddGS(ESL\_MSA *msa, char *tag, esl\_pos\_t taglen, int sqidx, char *value, esl\_pos\_t vlen)]}
+
+Add an unparsed \verb+#=GS+ markup line to the MSA, 
+allocating as necessary. It's possible that we 
+could get more than one of the same type of GS 
+tag per sequence; for example, "DR PDB;" structure 
+links in Pfam.  Hack: handle these by appending to 
+the string, in a \verb+\n+ separated fashion.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_msa_AppendGC()}
+{\item[int esl\_msa\_AppendGC(ESL\_MSA *msa, char *tag, char *value)]}
+
+Add an unparsed \verb+#=GC+ markup line to the MSA 
+structure, allocating as necessary. When called 
+multiple times for the same tag, appends value 
+strings together -- used when parsing multiblock 
+alignment files, for example.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_msa_AppendGR()}
+{\item[int esl\_msa\_AppendGR(ESL\_MSA *msa, char *tag, int sqidx, char *value)]}
+
+Add an unparsed \verb+#=GR+ markup line to the MSA structure, 
+allocating as necessary.
+
+When called multiple times for the same tag, appends 
+value strings together -- used when parsing multiblock 
+alignment files, for example.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_msa_CheckUniqueNames()}
+{\item[int esl\_msa\_CheckUniqueNames(const ESL\_MSA *msa)]}
+
+Check whether all the sequence names in \ccode{msa}
+are unique; if so, return \ccode{eslOK}, and if not,
+return \ccode{eslFAIL}. 
+
+Stockholm files require names to be unique.  This
+function lets us check whether we need to munge seqnames
+before writing a Stockholm file.
+
+The check uses a keyhash, so it's efficient.
+
+Returns \ccode{eslOK} if names are unique.
+\ccode{eslFAIL} if not.
+
+Throws \ccode{eslMEM} on allocation failure.
+
+
+\hypertarget{func:esl_msa_ReasonableRF()}
+{\item[int esl\_msa\_ReasonableRF(ESL\_MSA *msa, double symfrac, int useconsseq, char *rfline)]}
+
+Define an \ccode{rfline} for the multiple alignment \ccode{msa} that
+marks consensus columns with an 'x' (or the consensus
+letter if useconsseq is TRUE), and non-consensus columns
+with a '.'.
+
+Consensus columns are defined as columns with fractional
+occupancy of $\geq$ \ccode{symfrac} in residues. For example,
+if \ccode{symfrac} is 0.7, columns containing $\geq$ 70\%
+residues are assigned as 'x' (or consensus letter) in the
+\ccode{rfline}, roughly speaking. "Roughly speaking", because the
+fractional occupancy is in fact calculated as a weighted
+frequency using sequence weights in \ccode{msa->wgt}, and because
+missing data symbols are ignored in order to be able to
+deal with sequence fragments. 
+
+The greater \ccode{symfrac} is, the more stringent the
+definition, and the fewer columns will be defined as
+consensus. \ccode{symfrac=0} will define all columns as
+consensus. \ccode{symfrac=1} will only define a column as
+consensus if it contains no gap characters at all.
+
+If the caller wants to designate any sequences as
+fragments, it must convert all leading and trailing gaps
+to the missing data symbol '~'.
+
+For text mode alignments, any alphanumeric character is
+considered to be a residue, and any non-alphanumeric
+character is considered to be a gap.
+
+The \ccode{rfline} is a NUL-terminated string, indexed
+\ccode{0..alen-1}.
+
+The \ccode{rfline} result can be \ccode{msa->rf}, if the caller
+wants to set the \ccode{msa's} own RF line; or it can be any
+alternative storage provided by the caller. In either
+case, the caller must provide allocated space for at
+least \ccode{msa->alen+1} chars.
+
+Returns \ccode{eslOK} on success.
+
+
+
+\hypertarget{func:esl_msa_MarkFragments()}
+{\item[int esl\_msa\_MarkFragments(const ESL\_MSA *msa, float fragthresh, ESL\_BITFIELD **ret\_fragassign)]}
+
+Heuristically define sequence fragments (as opposed to
+full length sequences) in \ccode{msa}. Set bit \ccode{i} in \ccode{fragassign}
+to \ccode{TRUE} if seq \ccode{i} is a fragment, else \ccode{FALSE}.
+
+The rule is to calculate the fractional "span" of each
+aligned sequence: the aligned length from its first to
+last residue, divided by the total number of aligned
+columns; sequence is defined as a fragment if \ccode{aspan/alen
+< fragthresh}.
+
+In a text mode \ccode{msa}, any alphanumeric character is
+considered to be a residue, and any non-alphanumeric
+char is considered to be a gap.
+
+\ccode{fragassign} is allocated here; caller frees.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+
+\hypertarget{func:esl_msa_MarkFragments_old()}
+{\item[int esl\_msa\_MarkFragments\_old(ESL\_MSA *msa, double fragthresh)]}
+
+Use a heuristic to define sequence fragments (as opposed
+to "full length" sequences) in alignment \ccode{msa}.
+
+The rule is that if the sequence has a raw (unaligned)
+length not greater than \ccode{fragthresh} times the alignment
+length in columns, the sequence is defined as a fragment.
+
+For each fragment, all leading and trailing gap symbols
+(all gaps before the first residue and after the last
+residue) are converted to missing data symbols
+(typically '~', but nonstandard digital alphabets may
+have defined another character).
+
+If \ccode{fragthresh} is 0.0, no nonempty sequence is defined
+as a fragment.
+
+If \ccode{fragthresh} is 1.0, all sequences are defined as
+fragments.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_msa_SequenceSubset()}
+{\item[int esl\_msa\_SequenceSubset(const ESL\_MSA *msa, const int *useme, ESL\_MSA **ret\_new)]}
+
+Given an array \ccode{useme} (0..nseq-1) of TRUE/FALSE flags for each
+sequence in an alignment \ccode{msa}; create a new alignment containing
+only those seqs which are flagged \ccode{useme=TRUE}. Return a pointer
+to this newly allocated alignment through \ccode{ret\_new}. Caller is
+responsible for freeing it.
+
+The smaller alignment might now contain columns
+consisting entirely of gaps or missing data, depending
+on what sequence subset was extracted. The caller may
+want to immediately call \ccode{esl\_msa\_MinimGaps()} on the
+new alignment to clean this up.
+
+Unparsed GS and GR Stockholm annotation that is presumably still
+valid is transferred to the new alignment. Unparsed GC, GF, and
+comments that are potentially invalidated by taking the subset
+of sequences are not transferred to the new MSA.
+
+Weights are transferred exactly. If they need to be
+renormalized to some new total weight (such as the new,
+smaller total sequence number), the caller must do that.
+
+\ccode{msa} may be in text mode or digital mode. The new MSA
+in \ccode{ret\_new} will have the same mode.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_new} is set to point at a new
+(smaller) alignment.
+
+Throws \ccode{eslEINVAL} if the subset has no sequences in it;
+\ccode{eslEMEM} on allocation error.
+
+
+
+\hypertarget{func:esl_msa_ColumnSubset()}
+{\item[int esl\_msa\_ColumnSubset(ESL\_MSA *msa, char *errbuf, const int *useme)]}
+
+Given an array \ccode{useme} (0..alen-1) of TRUE/FALSE flags,
+where TRUE means "keep this column in the new alignment"; 
+remove all columns annotated as FALSE in the \ccode{useme} 
+array. This is done in-place on the MSA, so the MSA is 
+modified: \ccode{msa->alen} is reduced, \ccode{msa->aseq} is shrunk 
+(or \ccode{msa->ax}, in the case of a digital mode alignment), 
+and all associated per-residue or per-column annotation
+is shrunk.
+
+Returns \ccode{eslOK} on success.
+Possibilities from \ccode{esl\_msa\_RemoveBrokenBasepairs()} call:
+\ccode{eslESYNTAX} if WUSS string for \ccode{SS\_cons} or \ccode{msa->ss}
+following \ccode{esl\_wuss\_nopseudo()} is inconsistent.
+\ccode{eslEINVAL} if a derived ct array implies a pknotted SS.
+
+
+\hypertarget{func:esl_msa_MinimGaps()}
+{\item[int esl\_msa\_MinimGaps(ESL\_MSA *msa, char *errbuf, const char *gaps, int consider\_rf)]}
+
+Remove all columns in the multiple alignment \ccode{msa}
+that consist entirely of gaps or missing data.
+
+For a text mode alignment, \ccode{gaps} is a string defining
+the gap characters, such as \ccode{"-\_.~"}. For a digital mode
+alignment, \ccode{gaps} may be passed as \ccode{NULL}, because the
+internal alphabet already knows what the gap and missing
+data characters are.
+
+\ccode{msa} is changed in-place to a narrower alignment
+containing fewer columns. All per-residue and per-column
+annotation is altered appropriately for the columns that
+remain in the new alignment.
+
+If \ccode{consider\_rf} is TRUE, only columns that are gaps
+in all sequences of \ccode{msa} and a gap in the RF annotation 
+of the alignment (\ccode{msa->rf}) will be removed. It is 
+okay if \ccode{consider\_rf} is TRUE and \ccode{msa->rf} is NULL
+(no error is thrown), the function will behave as if 
+\ccode{consider\_rf} is FALSE.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+Possibilities from \ccode{esl\_msa\_ColumnSubset()} call:
+\ccode{eslESYNTAX} if WUSS string for \ccode{SS\_cons} or \ccode{msa->ss}
+following \ccode{esl\_wuss\_nopseudo()} is inconsistent.
+\ccode{eslEINVAL} if a derived ct array implies a pknotted SS.
+
+
+
+\hypertarget{func:esl_msa_MinimGapsText()}
+{\item[int esl\_msa\_MinimGapsText(ESL\_MSA *msa, char *errbuf, const char *gaps, int consider\_rf, int fix\_bps)]}
+
+Same as esl\_msa\_MinimGaps(), but specialized for a text mode
+alignment where we don't know the alphabet. The issue is what 
+to do about RNA secondary structure annotation (SS, SS\_cons)
+when we remove columns, which can remove one side of a bp and
+invalidate the annotation string. For digital alignments,
+\ccode{esl\_msa\_MinimGaps()} knows the alphabet and will fix base pairs
+for RNA/DNA alignments. For text mode, though, we have to 
+get told to do it, because the default behavior for text mode
+alis is to assume that the alphabet is totally arbitrary, and we're
+not allowed to make assumptions about its symbols' meaning.
+Hence, the \ccode{fix\_bps} flag here. 
+
+Ditto for the \ccode{gaps} string: we don't know what symbols
+are supposed to be gaps unless we're told something like 
+\ccode{"-\_.~"}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure. 
+Possibilities from \ccode{esl\_msa\_ColumnSubset()} call:
+\ccode{eslESYNTAX} if WUSS string for \ccode{SS\_cons} or \ccode{msa->ss}
+following \ccode{esl\_wuss\_nopseudo()} is inconsistent.
+\ccode{eslEINVAL} if a derived ct array implies a pknotted SS.
+
+
+\hypertarget{func:esl_msa_NoGaps()}
+{\item[int esl\_msa\_NoGaps(ESL\_MSA *msa, char *errbuf, const char *gaps)]}
+
+Remove all columns in the multiple alignment \ccode{msa} that
+contain any gaps or missing data, such that the modified
+MSA consists only of ungapped columns (a solid block of
+residues). 
+
+This is useful for filtering alignments prior to
+phylogenetic analysis using programs that can't deal
+with gaps.
+
+For a text mode alignment, \ccode{gaps} is a string defining
+the gap characters, such as \ccode{"-\_.~"}. For a digital mode
+alignment, \ccode{gaps} may be passed as \ccode{NULL}, because the
+internal alphabet already knows what the gap and
+missing data characters are.
+
+\ccode{msa} is changed in-place to a narrower alignment
+containing fewer columns. All per-residue and per-column
+annotation is altered appropriately for the columns that
+remain in the new alignment.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+Possibilities from \ccode{esl\_msa\_ColumnSubset()} call:
+\ccode{eslESYNTAX} if WUSS string for \ccode{SS\_cons} or \ccode{msa->ss}
+following \ccode{esl\_wuss\_nopseudo()} is inconsistent.
+\ccode{eslEINVAL} if a derived ct array implies a pknotted SS.
+
+
+
+\hypertarget{func:esl_msa_NoGapsText()}
+{\item[int esl\_msa\_NoGapsText(ESL\_MSA *msa, char *errbuf, const char *gaps, int fix\_bps)]}
+
+Like \ccode{esl\_msa\_NoGaps()} but specialized for textmode \ccode{msa} where
+we don't know the alphabet, yet might need to fix alphabet-dependent
+problems. 
+
+Like \ccode{esl\_msa\_MinimGapsText()}, the alphabet-dependent issue we might
+want to fix is RNA secondary structure annotation (SS, SS\_cons);
+removing a column might remove one side of a base pair annotation, and
+invalidate a secondary structure string. \ccode{fix\_bps} tells the function
+that SS and SS\_cons are RNA WUSS format strings, and the function is
+allowed to edit (and fix) them. Normally, in text mode msa's, we
+are not allowed to interpret any meaning of symbols.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+Possibilities from \ccode{esl\_msa\_ColumnSubset()} call:
+\ccode{eslESYNTAX} if WUSS string for \ccode{SS\_cons} or \ccode{msa->ss}
+following \ccode{esl\_wuss\_nopseudo()} is inconsistent.
+\ccode{eslEINVAL} if a derived ct array implies a pknotted SS.
+
+
+\hypertarget{func:esl_msa_SymConvert()}
+{\item[int esl\_msa\_SymConvert(ESL\_MSA *msa, const char *oldsyms, const char *newsyms)]}
+
+In the aligned sequences in a text-mode \ccode{msa}, convert any
+residue in the string \ccode{oldsyms} to its counterpart (at the same
+position) in string \ccode{newsyms}.
+
+To convert DNA to RNA, \ccode{oldsyms} could be "Tt" and
+\ccode{newsyms} could be "Uu". To convert IUPAC symbols to
+N's, \ccode{oldsyms} could be "RYMKSWHBVDrymkswhbvd" and
+\ccode{newsyms} could be "NNNNNNNNNNnnnnnnnnnn". 
+
+As a special case, if \ccode{newsyms} consists of a single
+character, then any character in the \ccode{oldsyms} is 
+converted to this character. 
+
+Thus, \ccode{newsyms} must either be of the same length as
+\ccode{oldsyms}, or of length 1. Anything else will cause
+undefined behavior (and probably segfault). 
+
+The conversion is done in-place, so the \ccode{msa} is
+modified.
+
+This is a poor man's hack for processing text mode MSAs
+into a more consistent text alphabet. It is unnecessary
+for digital mode MSAs, which are already in a standard
+internal alphabet. Calling \ccode{esl\_msa\_SymConvert()} on a
+digital mode alignment throws an \ccode{eslEINVAL} error.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{msa} is in digital mode, or if the \ccode{oldsyms}
+and \ccode{newsyms} strings aren't valid together.
+
+
+\hypertarget{func:esl_msa_Checksum()}
+{\item[int esl\_msa\_Checksum(const ESL\_MSA *msa, uint32\_t *ret\_checksum)]}
+
+Calculates a 32-bit checksum for \ccode{msa}.
+
+Only the alignment data are considered, not the sequence
+names or other annotation. For text mode alignments, the
+checksum is case sensitive.
+
+This is used as a quick way to try to verify that a
+given alignment is identical to an expected one; for
+example, when HMMER is mapping new sequence alignments
+onto exactly the same seed alignment an HMM was built
+from.
+
+Returns \ccode{eslOK} on success.
+
+
+
+\hypertarget{func:esl_msa_RemoveBrokenBasepairsFromSS()}
+{\item[int esl\_msa\_RemoveBrokenBasepairsFromSS(char *ss, char *errbuf, int len, const int *useme)]}
+
+Given an array \ccode{useme} (0..alen-1) of TRUE/FALSE flags,
+remove any basepair from an SS string that is between
+alignment columns (i,j) for which either \ccode{useme[i-1]} or
+\ccode{useme[j-1]} is FALSE.  Called by
+\ccode{esl\_msa\_RemoveBrokenBasepairs()}.
+
+The input SS string will be overwritten. If it was not
+in full WUSS format when passed in, it will be upon
+exit.  Note that that means if there's residues in the
+input ss that correspond to gaps in an aligned sequence
+or RF annotation, they will not be treated as gaps in
+the returned SS. For example, a gap may become a '-'
+character, a '\ccode{\_}' character, or a ':' character. I'm not
+sure how to deal with this in a better way. We could
+demand an aligned sequence to use to de-gap the SS
+string, but that would require disallowing any gap to be
+involved in a basepair, which I'm not sure is something
+we want to forbid.
+
+If the original SS is inconsistent it's left untouched
+and non-\ccode{eslOK} is returned as listed below.
+
+Returns \ccode{eslOK} on success.
+\ccode{eslESYNTAX} if SS string 
+\ccode{eslEINVAL} if a derived ct array implies a pknotted 
+SS, this should be impossible.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_msa_RemoveBrokenBasepairs()}
+{\item[int esl\_msa\_RemoveBrokenBasepairs(ESL\_MSA *msa, char *errbuf, const int *useme)]}
+
+Given an array \ccode{useme} (0..alen-1) of TRUE/FALSE flags,
+remove any basepair from \ccode{SS\_cons} and individual SS
+annotation in alignment columns (i,j) for which either
+\ccode{useme[i-1]} or \ccode{useme[j-1]} is FALSE.  Called
+automatically from \ccode{esl\_msa\_ColumnSubset()} with same
+\ccode{useme}.
+
+If the original structure data is inconsistent it's left
+untouched.
+
+Returns \ccode{eslOK} on success.
+\ccode{eslESYNTAX} if WUSS string for \ccode{SS\_cons} or \ccode{msa->ss}
+following \ccode{esl\_wuss\_nopseudo()} is inconsistent.
+\ccode{eslEINVAL} if a derived ct array implies a pknotted 
+SS, this should be impossible
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_msa_ReverseComplement()}
+{\item[int esl\_msa\_ReverseComplement(ESL\_MSA *msa)]}
+
+Reverse complement the multiple alignment \ccode{msa}, in place.
+
+\ccode{msa} must be in digital mode, and it must be in an alphabet
+that permits reverse complementation (\ccode{eslDNA}, \ccode{eslRNA}).
+
+In addition to reverse complementing the sequence data,
+per-column and per-residue annotation also gets reversed
+or reverse complemented. Secondary structure annotations
+(the consensus structure \ccode{ss\_cons}, and any individual
+structures \ccode{ss[i]}) are assumed to be in WUSS format,
+and are "reverse complemented" using
+\ccode{esl\_wuss\_reverse()}.  Other annotations are assumed to
+be textual, and are simply reversed. Beware, because
+this can go awry if an optional \ccode{gc} or \ccode{gr} annotation
+has semantics that would require complementation (an RNA
+structure annotation, for example).
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINCOMPAT} if \ccode{msa} isn't digital, or isn't in an alphabet 
+that allows reverse complementation.
+
+
+\hypertarget{func:esl_msa_Hash()}
+{\item[int esl\_msa\_Hash(ESL\_MSA *msa)]}
+
+Caller wants to map sequence names to integer index in the
+\ccode{ESL\_MSA} structure, using the internal \ccode{msa->index} keyhash.
+Create (or recreate) that index.
+
+Each sequence name must be unique. If not, returns
+\ccode{eslEDUP}, and \ccode{msa->index} is \ccode{NULL} (if it already
+existed, it is destroyed).
+
+Returns \ccode{eslOK} on success, and \ccode{msa->index} is available for 
+keyhash lookups.
+
+\ccode{eslEDUP} if any sequence names are duplicated, and 
+\ccode{msa->index} is \ccode{NULL}.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_msa_FlushLeftInserts()}
+{\item[int esl\_msa\_FlushLeftInserts(ESL\_MSA *msa)]}
+
+Given an alignment \ccode{msa} with reference annotation
+defining consensus (match) columns versus insertions,
+make all the insertions flush left (i.e. in each
+insertion position in the consensus, gaps follow
+inserted residues).
+
+This makes profile multiple alignments unique w.r.t.
+arbitrary gap ordering in insert regions, since profile
+alignments don't specify any alignment of insertions.
+A2M alignment format, for example, does not specify any
+insert alignment.
+
+Returns \ccode{eslOK} on success. \ccode{msa} is altered, rearranging the
+order of gaps and inserted residues.
+
+Throws \ccode{eslEINVAL} if \ccode{msa} has no reference annotation.
+
+
+
+\hypertarget{func:esl_msa_Validate()}
+{\item[int esl\_msa\_Validate(const ESL\_MSA *msa, char *errmsg)]}
+
+Validates the fields of the \ccode{ESL\_MSA} structure
+\ccode{msa}. Makes sure required information is present,
+consistent. If so, return \ccode{eslOK}.
+
+If a problem is detected, return \ccode{eslFAIL}. Caller may
+also provide an optional \ccode{errmsg} pointer to a buffer of
+at least \ccode{eslERRBUFSIZE}; if this message buffer is
+provided, an informative error message is put there.
+
+Returns \ccode{eslOK} on success, and \ccode{errmsg} (if provided) is set
+to an empty string.
+
+\ccode{eslFAIL} on failure and \ccode{errmsg} (if provided) contains 
+the reason for the failure.
+
+
+\hypertarget{func:esl_msa_Compare()}
+{\item[int esl\_msa\_Compare(ESL\_MSA *a1, ESL\_MSA *a2)]}
+
+Returns \ccode{eslOK} if the mandatory and optional contents
+of MSAs \ccode{a1} and \ccode{a2} are identical; otherwise return
+\ccode{eslFAIL}.
+
+Only mandatory and parsed optional information is
+compared. Unparsed Stockholm markup is not compared.
+
+
+\hypertarget{func:esl_msa_CompareMandatory()}
+{\item[int esl\_msa\_CompareMandatory(ESL\_MSA *a1, ESL\_MSA *a2)]}
+
+Compare mandatory contents of two MSAs, \ccode{a1} and \ccode{a2}.
+This comprises \ccode{aseq} (or \ccode{ax}, for a digital alignment);
+\ccode{sqname}, \ccode{wgt}, \ccode{alen}, \ccode{nseq}, and \ccode{flags}.
+
+Returns \ccode{eslOK} if the MSAs are identical; 
+\ccode{eslFAIL} if they are not.
+
+
+\hypertarget{func:esl_msa_CompareOptional()}
+{\item[int esl\_msa\_CompareOptional(ESL\_MSA *a1, ESL\_MSA *a2)]}
+
+Compare optional contents of two MSAs, \ccode{a1} and \ccode{a2}.
+
+Returns \ccode{eslOK} if the MSAs are identical; 
+\ccode{eslFAIL} if they are not.
+
+
+\hypertarget{func:esl_msa_Sample()}
+{\item[int esl\_msa\_Sample(ESL\_RANDOMNESS *rng, ESL\_ALPHABET *abc, int max\_nseq, int max\_alen, ESL\_MSA **ret\_msa)]}
+
+Sample a random digital MSA with a random depth 1..\ccode{max\_nseq}
+random sequences and a random alignment length
+1..\ccode{alen}. Return the MSA via \ccode{*ret\_msa}. Caller is 
+responsible for free'ing it with \ccode{esl\_msa\_Destroy()}.
+
+Currently generates aligned sequences \ccode{ax}, names
+\ccode{sqname} plus a randomly generated reference/consensus
+annotation line. Sets mandatory weights to default all
+1.0. 
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_msa} is the sampled MSA.
+
+Throws \ccode{eslEMEM} on allocation failure, and \ccode{*ret\_msa} is \ccode{NULL}.
+
+
+
+\end{sreapi}
+

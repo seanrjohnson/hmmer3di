@@ -1,0 +1,56 @@
+\begin{cchunk}
+#include <stdio.h>
+#include "easel.h"
+#include "esl_ssi.h"
+
+int 
+main(int argc, char **argv)
+{
+  ESL_NEWSSI *ns;
+  char    *fafile;              /* name of FASTA file                   */
+  FILE    *fp;                  /* opened FASTA file for reading        */
+  char    *ssifile;             /* name of SSI file                     */
+  uint16_t fh;                  /* file handle SSI associates w/ fafile */
+  char    *buf = NULL;          /* growable buffer for esl_fgets()      */
+  int      n   = 0;             /* length of buf                        */
+  char    *s, *seqname;		
+  off_t    seq_offset;
+  int      status;
+
+  /* Open a new SSI index named <fafile>.ssi */
+  fafile = argv[1];
+  esl_strdup(fafile,   -1, &ssifile);  
+  esl_strcat(&ssifile, -1, ".ssi", 4); 
+  status = esl_newssi_Open(ssifile, FALSE, &ns);
+  if      (status == eslENOTFOUND)   esl_fatal("failed to open SSI index %s", ssifile);
+  else if (status == eslEOVERWRITE)  esl_fatal("SSI index %s already exists; delete or rename it", ssifile);
+  else if (status != eslOK)          esl_fatal("failed to create a new SSI index");
+
+  /* Collect the sequence names from a FASTA file into an index */
+  if ((fp = fopen(fafile, "r"))              == NULL)  esl_fatal("failed to open %s", fafile);
+  if (esl_newssi_AddFile(ns, fafile, 1, &fh) != eslOK) esl_fatal("failed to add %s to index: %s", fafile, ns->errbuf);
+  seq_offset = ftello(fp);
+  while (esl_fgets(&buf, &n, fp) == eslOK)
+    {
+      if (*buf == '>') {
+	s = buf+1;                           /* skip past >                */
+	esl_strtok(&s, " \t\n", &seqname);   /* name = 1st token on > line */
+	if (esl_newssi_AddKey(ns, seqname, fh, seq_offset, 0, 0) != eslOK)
+	  esl_fatal("failed to add key %s to index: %s", seqname, ns->errbuf);
+      }
+      seq_offset = ftello(fp);				 
+    }
+  free(buf);
+  fclose(fp);
+
+  /* Save the index to disk */
+  status = esl_newssi_Write(ns);
+  if      (status == eslEDUP)     esl_fatal("SSI index construction failed:\n  %s", ns->errbuf);
+  else if (status == eslERANGE)   esl_fatal("SSI index file size exceeds maximum allowed by your filesystem");
+  else if (status == eslESYS)     esl_fatal("SSI index sort failed:\n  %s", ns->errbuf);
+  else if (status != eslOK)       esl_fatal("SSI indexing failed:\n  %s", ns->errbuf);
+  esl_newssi_Close(ns);  
+  free(ssifile);
+  return 0;
+}
+\end{cchunk}

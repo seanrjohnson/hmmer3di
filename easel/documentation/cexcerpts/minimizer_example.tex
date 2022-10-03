@@ -1,0 +1,62 @@
+\begin{cchunk}
+/* compile: gcc -g -Wall -I. -o example -DeslMINIMIZER_EXAMPLE esl_minimizer.c esl_vectorops.c easel.c -lm
+ * run:     ./example 
+ */
+#include <stdio.h>
+
+#include "easel.h"
+#include "esl_vectorops.h"
+#include "esl_minimizer.h"
+
+/* a simple multidimensional quadratic w/ a minimum at 0:
+ *    $f(x) = a_1 x_1^2 + ... a_n x_n^2$
+ */ 
+static double
+example_func(double *x, int n, void *prm)
+{
+  double *a;
+  double  fx;
+  int     i;
+
+  a = (double *) prm;	/* cast the data vector */
+  for (fx = 0., i = 0; i < n; i++)
+    fx += a[i] * x[i] * x[i];
+  return fx;
+}
+/* gradient of the f(x): d/dx_i = 2 a_i x_i
+ */
+static void
+example_dfunc(double *x, int n, void *prm, double *dx)
+{
+  double *a;
+  int     i;
+
+  a = (double *) prm;	/* cast the data vector */
+  for (i = 0; i < n; i++)
+    dx[i] = 2.0 * a[i] * x[i];
+}
+int
+main(int argc, char **argv)
+{
+  ESL_MIN_DAT *dat = esl_min_dat_Create(NULL);
+  int    n = 6;
+  double a[6] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 };
+  double x[6] = { 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 };
+  double fx;
+  int    i;
+
+  esl_min_ConjugateGradientDescent(NULL, x, n, 
+				   &example_func, &example_dfunc, (void *) a, 
+				   &fx, dat);
+
+  printf("At minimum: f(x) = %g\n", fx);
+  printf("vector x = ");
+  for (i = 0; i < 6; i++) printf("%g  ", x[i]);
+  printf("\n");
+
+  esl_min_dat_Dump(stdout, dat);
+
+  esl_min_dat_Destroy(dat);
+  return 0;
+}
+\end{cchunk}

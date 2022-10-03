@@ -1,0 +1,446 @@
+\begin{sreapi}
+\hypertarget{func:esl_ssi_Open()}
+{\item[int esl\_ssi\_Open(const char *filename, ESL\_SSI **ret\_ssi)]}
+
+Open the SSI index file \ccode{filename}, and returns a pointer
+to the new \ccode{ESL\_SSI} object in \ccode{ret\_ssi}.
+
+Caller is responsible for closing the SSI file with
+\ccode{esl\_ssi\_Close()}.
+
+Returns \ccode{eslOK}        on success;
+\ccode{eslENOTFOUND} if \ccode{filename} cannot be opened for reading;
+\ccode{eslEFORMAT}   if it's not in correct SSI file format;
+\ccode{eslERANGE}    if it uses 64-bit file offsets, and we're on a system
+that doesn't support 64-bit file offsets.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_ssi_FindName()}
+{\item[int esl\_ssi\_FindName(ESL\_SSI *ssi, const char *key, uint16\_t *ret\_fh, off\_t *ret\_roff, off\_t *opt\_doff, int64\_t *opt\_L)]}
+
+Looks up the string \ccode{key} in index \ccode{ssi}.
+\ccode{key} can be either a primary or secondary key. If \ccode{key}
+is found, \ccode{ret\_fh} contains a unique handle on
+the file that contains \ccode{key} (suitable for an \ccode{esl\_ssi\_FileInfo()}
+call, or for comparison to the handle of the last file
+that was opened for retrieval), and \ccode{ret\_offset} contains
+the offset of the sequence record in that file.
+
+Returns \ccode{eslOK}        on success;
+\ccode{eslENOTFOUND} if no such key is in the index;
+\ccode{eslEFORMAT}   if an fread() or fseeko() fails, which almost
+certainly reflects some kind of misformatting of
+the index.
+
+Throws \ccode{eslEMEM}      on allocation error.
+
+
+\hypertarget{func:esl_ssi_FindNumber()}
+{\item[int esl\_ssi\_FindNumber(ESL\_SSI *ssi, int64\_t nkey, uint16\_t *opt\_fh, off\_t *opt\_roff, off\_t *opt\_doff, int64\_t *opt\_L, char **opt\_pkey)]}
+
+Looks up primary key number \ccode{nkey} in the open index
+\ccode{ssi}.  \ccode{nkey} ranges from \ccode{0..ssi->nprimary-1}. When
+key \ccode{nkey} is found, any/all of several optional
+arguments point to results. \ccode{*opt\_fh} contains a unique
+handle on the file that contains that key (suitable for
+an \ccode{esl\_ssi\_FileInfo()} call, or for comparison to the
+handle of the last file that was opened for retrieval).
+\ccode{*opt\_roff} contains the record offset; \ccode{*opt\_doff}
+contains the data offset; \ccode{*opt\_L} contains the record
+length; and \ccode{*opt\_pkey} points to the primary key name
+(a string, allocated here, that the caller becomes
+responsible for free'ing).
+
+Returns \ccode{eslOK}        on success;
+\ccode{eslENOTFOUND} if there is no sequence record \ccode{nkey};
+\ccode{eslEFORMAT}   if a read or a seek fails, probably indicating
+some kind of file misformatting.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_ssi_FindSubseq()}
+{\item[int esl\_ssi\_FindSubseq(ESL\_SSI *ssi, const char *key, int64\_t requested\_start,
+		   uint16\_t *ret\_fh, off\_t *ret\_roff, off\_t *ret\_doff, int64\_t *ret\_L, int64\_t *ret\_actual\_start)]}
+
+Fast subsequence retrieval: look up a primary or secondary
+\ccode{key} in the open index \ccode{ssi}, and ask for the nearest data
+offset to a subsequence starting at residue
+\ccode{requested\_start} in the sequence (numbering the sequence
+\ccode{1..L}).  If \ccode{key} is found, on return, \ccode{ret\_fh} contains
+a unique handle on the file that contains \ccode{key};
+\ccode{ret\_roff} contains the disk offset to the start of the
+sequence record; \ccode{ret\_doff} contains the disk offset
+(see below); and \ccode{ret\_actual\_start) contains the coordinate
+(1..L) of the first valid residue at or after
+<data\_offset}. \ccode{ret\_actual\_start} is $\leq$
+\ccode{requested\_start}.
+
+Depending on the file's characteristics, there are four
+possible outcomes.
+
+If the file has the \ccode{eslSSI\_FASTSUBSEQ} flag set, a data
+offset was indexed for this key, and the data can be
+indexed at single residue resolution (because the file's
+lines contain only residues, no spaces), then \ccode{ret\_doff}
+is exactly the position of residue \ccode{requested\_start} on
+disk, and \ccode{ret\_actual\_start} is \ccode{requested\_start}.
+
+If the file has the \ccode{eslSSI\_FASTSUBSEQ} flag set, a data
+offset was indexed for this key, but the data can only be
+indexed at line resolution (because at least some of the
+file's lines contain spaces), then \ccode{ret\_doff} is the
+position of the start of the line that \ccode{requested\_start}
+is on, and \ccode{ret\_actual\_start} is the coord \ccode{1..L} of the
+first residue on that line.
+
+If the file does not have the \ccode{eslSSI\_FASTSUBSEQ} flag
+set (because lines contain a variable number of residues
+and/or bytes), but a data offset was indexed for this
+key, then we can still at least return that data offset,
+but the caller is going to have to start from the
+beginning of the data and read residues until it reaches
+the desired \ccode{requested\_start}. Now \ccode{ret\_doff} is the
+offset to the start of the first line of the sequence
+data, and \ccode{ret\_actual\_start} is 1.
+
+If the key does not have a data offset indexed at all,
+then regardless of the file's \ccode{eslSSI\_FASTSUBSEQ}
+setting, we can't calculate even the position of the
+first line. In this case, \ccode{ret\_doff} is 0 (for
+unset/unknown), and \ccode{ret\_actual\_start} is \ccode{1}.
+
+A caller that's going to position the disk and read a
+subseq must check for all four possible outcomes (pardon
+redundancy with the above, but just to be clear, from the
+caller's perspective now):
+
+If \ccode{ret\_doff} is 0, no data offset information can be
+calculated; the caller can still use \ccode{ret\_roff} to
+position the disk to the start of \ccode{key}'s record, but it
+will need to parse the header to find the start of the
+sequence data; then it will need to parse the sequence
+data, skipping to residue \ccode{requested start}.
+
+If \ccode{ret\_doff} is valid ($>0$), and \ccode{ret\_actual\_start} is
+1, then caller may use \ccode{ret\_doff} to position the disk to
+the start of the first sequence data line, but will still
+need to parse all the sequence data, counting and
+skipping to residue \ccode{requested start}. This is equivalent
+to (and in practice, not much more efficient than)
+positioning to the record start and parsing the header to
+locate the sequence data start. 
+
+If \ccode{ret\_doff} is valid ($>0$), and \ccode{ret\_actual\_start} is
+$>1$ but $<$ \ccode{requested\_start}, then \ccode{ret\_doff} is the
+offset to the first byte of a line on which the
+subsequence begins. The caller can position the disk
+there, then start parsing, skipping \ccode{requested\_start -
+*ret\_actual\_start} residues to reach the
+\ccode{requested\_start}. (In the case where the subsequence
+begins on the first line, then \ccode{ret\_actual\_start} will be
+1, and the caller will have to handle this as the case
+above.)
+
+If \ccode{<ret\_doff} is valid ($>0$), and \ccode{ret\_actual\_start} is
+$=$ \ccode{requested\_start}, then \ccode{ret\_doff} is the offset to a
+byte in the file, such that the requested subsequence
+starts at the next valid residue at or after that
+position.  (The \ccode{ret\_doff} would usually be exactly the
+first residue of the subsequence, because we used single
+residue resolution arithmetic to find it, but there's a
+case where \ccode{requested\_start} happens to be the first
+residue of a line and we calculated \ccode{ret\_doff} using
+line-resolution arithmetic; in this latter case,
+\ccode{ret\_doff} could be pointing at a space before the first
+subseq residue.) The caller may position the disk there
+and start parsing immediately; the first valid residue
+will be the start of the subsequence.
+
+Returns \ccode{eslOK}         on any of the four successful outcomes.
+\ccode{eslENOTFOUND}  if no such key is found in the index;
+\ccode{eslEFORMAT} on a read or seek failure, presumably meaning that
+the file is misformatted somehow;
+\ccode{eslERANGE}  if \ccode{requested\_start} isn't somewhere in the range
+\ccode{1..len} for the target sequence.
+
+Throws \ccode{eslEMEM} on allocation error.                       
+
+
+\hypertarget{func:esl_ssi_FileInfo()}
+{\item[int esl\_ssi\_FileInfo(ESL\_SSI *ssi, uint16\_t fh, char **ret\_filename, int *ret\_format)]}
+
+Given a file number \ccode{fh} in an open index file
+\ccode{ssi}, retrieve file name \ccode{ret\_filename} and
+the file format \ccode{ret\_format}. 
+
+\ccode{ret\_filename} is a pointer to a string maintained
+internally by \ccode{ssi}. It should not be free'd; 
+\ccode{esl\_ssi\_Close(ssi)} will take care of it.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if there is no such file number \ccode{fh}.
+
+
+\hypertarget{func:esl_ssi_Close()}
+{\item[void esl\_ssi\_Close(ESL\_SSI *ssi)]}
+
+Close an open SSI index \ccode{ssi}.
+
+
+
+\hypertarget{func:esl_newssi_Open()}
+{\item[int esl\_newssi\_Open(const char *ssifile, int allow\_overwrite, ESL\_NEWSSI **ret\_newssi)]}
+
+Creates and returns a \ccode{ESL\_NEWSSI}, in order to create a 
+new SSI index file.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_newssi} is a pointer to a
+new \ccode{ESL\_NEWSSI} structure.
+
+Returns \ccode{eslENOTFOUND} if \ccode{ssifile} can't be opened.
+
+Returns \ccode{eslEOVERWRITE} if \ccode{allow\_overwrite} is \ccode{FALSE}
+and \ccode{ssifile} (or any necessary tmp files) already
+exist, to block overwriting of an existing SSI file.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_newssi_AddFile()}
+{\item[int esl\_newssi\_AddFile(ESL\_NEWSSI *ns, const char *filename, int fmt, uint16\_t *ret\_fh)]}
+
+Registers the file \ccode{filename} into the new index \ccode{ns},
+along with its format code \ccode{fmt}. The index assigns it
+a unique handle, which it returns in \ccode{ret\_fh}. This
+handle is needed when registering primary keys.
+
+Caller should make sure that the same file isn't registered
+twice; this function doesn't check.
+
+Returns \ccode{eslOK} on success;
+\ccode{eslERANGE} if registering this file would exceed the
+maximum number of indexed files.
+
+Throws \ccode{eslEMEM} on allocation or reallocation error.
+
+
+\hypertarget{func:esl_newssi_SetSubseq()}
+{\item[int esl\_newssi\_SetSubseq(ESL\_NEWSSI *ns, uint16\_t fh, uint32\_t bpl, uint32\_t rpl)]}
+
+Declare that the file associated with handle \ccode{fh} is
+suitable for fast subsequence lookup, because it has
+a constant number of residues and bytes per (nonterminal)
+data line, \ccode{rpl} and \ccode{bpl}, respectively.
+
+Caller is responsible for this being true: \ccode{rpl} and
+\ccode{bpl} must be constant for every nonterminal line of 
+every sequence in this file.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} on invalid argument(s).
+
+
+\hypertarget{func:esl_newssi_AddKey()}
+{\item[int esl\_newssi\_AddKey(ESL\_NEWSSI *ns, const char *key, uint16\_t fh, 
+		  off\_t r\_off, off\_t d\_off, int64\_t L)]}
+
+Register primary key \ccode{key} in new index \ccode{ns}, while telling
+the index that this primary key is in the file associated
+with filehandle \ccode{fh} (the handle returned by a previous call
+to \ccode{esl\_newssi\_AddFile()}); that its record starts at 
+offset \ccode{r\_off} in the file; that its data (usually
+sequence data) starts at offset \ccode{d\_off} in the file (i.e.
+after any record header); and that the record's data is
+of length \ccode{L} (usually, the record is a sequence, and \ccode{L} 
+is its length in residues).
+
+The data length \ccode{L} is technically optional as far as SSI
+is concerned; \ccode{L} may be passed as 0 to leave it
+unset. However, functions in the \ccode{sqio} module that use
+SSI indices will assume that \ccode{L} is available.
+
+\ccode{d\_off} is also optional; it may be passed as \ccode{0} to
+leave it unset. If provided, \ccode{d\_off} gives an offset to
+the data portion of the record. The interpretation of
+this data offset may be implementation-defined and may
+depend on the format of the datafile; for example, in how
+\ccode{sqio} uses SSI indices, \ccode{d\_off} is the offset to the
+start of the first sequence line.
+
+Both \ccode{d\_off} and \ccode{L} must be provided, and additionally
+\ccode{eslSSI\_FASTSUBSEQ} must be set for this file, for fast
+subsequence lookup to work.
+
+Returns \ccode{eslOK}        on success;
+\ccode{eslERANGE}    if registering this key would exceed the maximum
+number of primary keys;
+\ccode{eslENOTFOUND} if we needed to open external tmp files, but
+the attempt to open them failed.
+
+Throws \ccode{eslEINVAL} on an invalid argument;
+\ccode{eslEMEM}   on allocation failure;
+\ccode{eslEWRITE} on any system error writing to tmp file, such
+as filling the filesystem.
+
+
+\hypertarget{func:esl_newssi_AddAlias()}
+{\item[int esl\_newssi\_AddAlias(ESL\_NEWSSI *ns, const char *alias, const char *key)]}
+
+Registers secondary key \ccode{alias} in index \ccode{ns}, and 
+map it to the primary key \ccode{key}. \ccode{key} must already
+have been registered. That is, when someone looks up \ccode{alias},
+we'll retrieve record \ccode{key}. 
+
+Returns \ccode{eslOK}        on success;
+\ccode{eslERANGE}    if registering this key would exceed the maximum
+number of secondary keys that can be stored;
+\ccode{eslENOTFOUND} if we needed to open external tmp files, but
+the attempt to open them failed.
+
+Throws \ccode{eslEWRITE}   on any system error writing to tmp file, such 
+as running out of space on the device.
+
+
+\hypertarget{func:esl_newssi_Write()}
+{\item[int esl\_newssi\_Write(ESL\_NEWSSI *ns)]}
+
+Writes the complete index \ccode{ns} in SSI format to its file,
+and closes the file.
+
+Handles all necessary overhead of sorting the primary and
+secondary keys, including any externally sorted tmpfiles that
+may have been needed for large indices.
+
+You only \ccode{\_Write()} once. The open SSI file is closed.
+After calling \ccode{\_Write()}, you should \ccode{\_Close()} the
+\ccode{ESL\_NEWSSI}.
+
+Verifies that all primary and secondary keys are unique.
+If not, returns \ccode{eslEDUP}.
+
+On any error, the SSI file \ccode{ns->ssifile} is deleted.
+
+Returns \ccode{eslOK}       on success;
+\ccode{eslEDUP}     if primary or secondary keys aren't all unique
+\ccode{eslERANGE}   if index size exceeds system's maximum file size;
+\ccode{eslESYS}     if any of the steps of an external sort fail.
+
+Throws \ccode{eslEINVAL} on invalid argument, including too-long tmpfile names,
+or trying to _Write() the \ccode{ESL\_NEWSSI} more than once;
+\ccode{eslEMEM}   on buffer allocation failure;
+\ccode{eslEWRITE} on any system write failure, including filled disk.  
+
+
+
+\hypertarget{func:esl_newssi_Close()}
+{\item[void esl\_newssi\_Close(ESL\_NEWSSI *ns)]}
+
+Frees a \ccode{ESL\_NEWSSI}.
+
+
+\hypertarget{func:esl_byteswap()}
+{\item[void esl\_byteswap(char *swap, int nbytes)]}
+
+Swap between big-endian and little-endian, in place.
+
+
+\hypertarget{func:esl_ntoh16()}
+{\item[uint16\_t esl\_ntoh16(uint16\_t netshort)]}
+
+Convert a 2-byte integer from network-order to host-order,
+and return it.
+
+\ccode{esl\_ntoh32()} and \ccode{esl\_ntoh64()} do the same, but for 4-byte
+and 8-byte integers, respectively.
+
+
+\hypertarget{func:esl_hton16()}
+{\item[uint16\_t esl\_hton16(uint16\_t hostshort)]}
+
+Convert a 2-byte integer from host-order to network-order, and
+return it.
+
+\ccode{esl\_hton32()} and \ccode{esl\_hton64()} do the same, but for 4-byte
+and 8-byte integers, respectively.
+
+
+\hypertarget{func:esl_fread_u16()}
+{\item[int esl\_fread\_u16(FILE *fp, uint16\_t *ret\_result)]}
+
+Read a 2-byte network-order integer from \ccode{fp}, convert to
+host order, leave it in \ccode{ret\_result}.
+
+\ccode{esl\_fread\_u32()} and \ccode{esl\_fread\_u64()} do the same, but
+for 4-byte and 8-byte integers, respectively.
+
+Returns \ccode{eslOK} on success, and \ccode{eslFAIL} on \ccode{fread()} failure.
+
+
+\hypertarget{func:esl_fwrite_u16()}
+{\item[int esl\_fwrite\_u16(FILE *fp, uint16\_t n)]}
+
+Write a 2-byte host-order integer \ccode{n} to stream \ccode{fp}
+in network order.
+
+\ccode{esl\_fwrite\_u32()} and \ccode{esl\_fwrite\_u64()} do the same, but
+for 4-byte and 8-byte integers, respectively.
+
+Returns \ccode{eslOK} on success, and \ccode{eslFAIL} on \ccode{fwrite()} failure.
+
+
+\hypertarget{func:esl_fread_offset()}
+{\item[int esl\_fread\_offset(FILE *fp, int sz, off\_t *ret\_offset)]}
+
+Read a file offset from the stream \ccode{fp} (which would usually
+be a save file), and store it in \ccode{ret\_offset}.
+
+Offsets may have been saved by a different machine
+than the machine that reads them. The writer and the reader
+may differ in byte order and in width (\ccode{sizeof(off\_t)}). 
+
+Byte order is dealt with by saving offsets in 
+network byte order, and converting them to host byte order
+when they are read (if necessary). 
+
+Width is dealt with by the \ccode{sz} argument, which must be
+either 4 or 8, specifying that the saved offset is a
+32-bit versus 64-bit \ccode{off\_t}. If the reading host
+\ccode{off\_t} width matches the \ccode{sz} of the writer, no
+problem. If \ccode{sz} is 4 but the reading host has 64-bit
+\ccode{off\_t}'s, this is also no problem; the conversion
+always works. If \ccode{sz} is 64 but the reading host has
+only 32-bit \ccode{off\_t}, we cannot guarantee that we have
+sufficient dynamic range to represent the offset; if
+the stored offset is too large to represent in a 32-bit
+offset, we throw a fatal \ccode{eslEINCOMPAT} error.
+
+Returns \ccode{eslOK} on success; \ccode{eslFAIL} on a read failure.
+
+Throws \ccode{eslEINVAL} if \ccode{sz} is something other than 4 or 8;
+\ccode{eslEINCOMPAT} if the stored offset is too large for
+the reader to represent (the machine that wrote the
+SSI file used 64 bit offsets, the reader uses 32
+bit offsets, and this offset is too large to represent
+in a 32 bit offset).
+
+
+\hypertarget{func:esl_fwrite_offset()}
+{\item[int esl\_fwrite\_offset(FILE *fp, off\_t offset)]}
+
+Portably write (save) \ccode{offset} to the stream \ccode{fp}, in network
+byte order. 
+
+Returns \ccode{eslOK} on success; \ccode{eslFAIL} on write failure.
+
+Throws \ccode{eslEINVAL} if \ccode{off\_t} is something other than a 32-bit or
+64-bit integer on this machine, in which case we don't know
+how to deal with it portably.
+
+
+\end{sreapi}
+

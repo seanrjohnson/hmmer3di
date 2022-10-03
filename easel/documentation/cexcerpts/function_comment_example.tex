@@ -1,0 +1,32 @@
+\begin{cchunk}
+/* Function:  esl_dmx_Exp()
+ * Synopsis:  Calculates matrix exponential $\mathbf{P} = e^{t\mathbf{Q}}$.
+ * Incept:    SRE, Thu Mar  8 18:41:38 2007 [Janelia]
+ *
+ * Purpose:   Calculates the matrix exponential $\mathbf{P} = e^{t\mathbf{Q}}$,
+ *            using a scaling and squaring algorithm with
+ *            the Taylor series approximation \citep{MolerVanLoan03}.
+ *                              
+ *            <Q> must be a square matrix of type <eslGENERAL>.
+ *            Caller provides an allocated <P> matrix of the same size and type as <Q>.
+ *            
+ *            A typical use of this function is to calculate a
+ *            conditional substitution probability matrix $\mathbf{P}$
+ *            (whose elements $P_{xy}$ are conditional substitution
+ *            probabilities $\mathrm{Prob}(y \mid x, t)$ from time $t$
+ *            and instantaneous rate matrix $\mathbf{Q}$.
+ *
+ * Args:      Q  - matrix to exponentiate (an instantaneous rate matrix)
+ *            t  - time units
+ *            P  - RESULT: $e^{tQ}$.
+ *
+ * Returns:   <eslOK> on success.
+ *
+ * Throws:    <eslEMEM> on allocation error.
+ *
+ * Xref:      J1/19.
+ */
+int
+esl_dmx_Exp(const ESL_DMATRIX *Q, double t, ESL_DMATRIX *P)
+{
+\end{cchunk}

@@ -1,0 +1,147 @@
+\begin{sreapi}
+\hypertarget{func:esl_wei_pdf()}
+{\item[double esl\_wei\_pdf(double x, double mu, double lambda, double tau)]}
+
+Calculates the Weibull pdf $P(X=x)$, given quantile \ccode{x},
+offset \ccode{mu}, and parameters \ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_wei_logpdf()}
+{\item[double esl\_wei\_logpdf(double x, double mu, double lambda, double tau)]}
+
+Calculates the log probability density function for the
+Weibull, $\log P(X=x)$, given quantile \ccode{x},
+offset \ccode{mu}, and parameters \ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_wei_cdf()}
+{\item[double esl\_wei\_cdf(double x, double mu, double lambda, double tau)]}
+
+Calculates the cumulative distribution function for the
+Weibull, $P(X \leq x)$, given quantile \ccode{x},
+offset \ccode{mu}, and parameters \ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_wei_logcdf()}
+{\item[double esl\_wei\_logcdf(double x, double mu, double lambda, double tau)]}
+
+Calculates the log of the cumulative distribution function for a
+Weibull, $P(X \leq x)$, given quantile \ccode{x},
+offset \ccode{mu}, and parameters \ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_wei_surv()}
+{\item[double esl\_wei\_surv(double x, double mu, double lambda, double tau)]}
+
+Calculates the survivor function, $P(X>x)$ (that is, 1-CDF,
+the right tail probability mass) for a Weibull
+distribution, given quantile \ccode{x}, offset \ccode{mu}, and parameters
+\ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_wei_logsurv()}
+{\item[double esl\_wei\_logsurv(double x, double mu, double lambda, double tau)]}
+
+Calculates the log survivor function, $\log P(X>x)$ (that is, 
+log(1-CDF), the right tail log probability mass) for a 
+Weibull distribution, given quantile \ccode{x}, offset \ccode{mu},
+and parameters \ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_wei_invcdf()}
+{\item[double esl\_wei\_invcdf(double p, double mu, double lambda, double tau)]}
+
+Calculates the inverse CDF for a Weibull distribution
+with parameters \ccode{mu}, \ccode{lambda}, and \ccode{tau}, returning
+the quantile \ccode{x} at which the CDF is \ccode{p}, for $0<p<1$.
+
+
+\hypertarget{func:esl_wei_generic_pdf()}
+{\item[double esl\_wei\_generic\_pdf(double x, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_wei\_pdf()}, taking
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_wei_generic_cdf()}
+{\item[double esl\_wei\_generic\_cdf(double x, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_wei\_cdf()}, taking
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_wei_generic_surv()}
+{\item[double esl\_wei\_generic\_surv(double x, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_wei\_surv()}, taking
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_wei_generic_invcdf()}
+{\item[double esl\_wei\_generic\_invcdf(double p, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_wei\_invcdf()}, taking
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_wei_Plot()}
+{\item[int esl\_wei\_Plot(FILE *fp, double mu, double lambda, double tau,
+	     double (*func)(double x, double mu, double lambda, double tau), 
+	     double xmin, double xmax, double xstep)]}
+
+Plot some Weibull function \ccode{func} (for instance, \ccode{esl\_wei\_pdf()})
+for Weibull parameters \ccode{mu}, \ccode{lambda}, and \ccode{tau}, for a range of
+quantiles x from \ccode{xmin} to \ccode{xmax} in steps of \ccode{xstep};
+output to an open stream \ccode{fp} in xmgrace XY input format.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error, such as filled disk.
+
+
+\hypertarget{func:esl_wei_Sample()}
+{\item[double esl\_wei\_Sample(ESL\_RANDOMNESS *r, double mu, double lambda, double tau)]}
+
+Sample a Weibull random variate,
+by the transformation method.
+
+
+\hypertarget{func:esl_wei_FitComplete()}
+{\item[int esl\_wei\_FitComplete(double *x, int n, double *ret\_mu,
+		    double *ret\_lambda, double *ret\_tau)]}
+
+Given an array of \ccode{n} samples \ccode{x[0]..x[n-1}, fit
+them to a stretched exponential distribution starting
+at lower bound \ccode{mu} (all $x_i > \mu$), and 
+return maximum likelihood parameters \ccode{ret\_lambda}
+and \ccode{ret\_tau}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslENOHALT} if the fit doesn't converge.
+
+
+
+\hypertarget{func:esl_wei_FitCompleteBinned()}
+{\item[int esl\_wei\_FitCompleteBinned(ESL\_HISTOGRAM *h, double *ret\_mu,
+			  double *ret\_lambda, double *ret\_tau)]}
+
+Given a histogram \ccode{g} with binned observations, where each
+bin i holds some number of observed samples x with values from 
+lower bound l to upper bound u (that is, $l < x \leq u$), and
+\ccode{mu}, the known offset (minimum value) of the distribution;
+return maximum likelihood parameters \ccode{ret\_lambda}
+and \ccode{ret\_tau}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslENOHALT} if the fit doesn't converge.
+
+
+
+\end{sreapi}
+

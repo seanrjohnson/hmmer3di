@@ -1,0 +1,39 @@
+\begin{cchunk}
+#include <stdio.h>
+#include "easel.h"
+#include "esl_ssi.h"
+
+int main(int argc, char **argv)
+{
+  ESL_SSI *ssi;
+  char    *seqname;             /* name of sequence to retrieve         */
+  char    *ssifile;             /* name of SSI file                     */
+  uint16_t fh;                  /* file handle SSI associates w/ fafile */
+  char    *fafile;              /* name of FASTA file                   */
+  int      fmt;                 /* format code (1, in this example)     */
+  off_t    offset;              /* disk offset of seqname in fafile     */
+  FILE    *fp;                  /* opened FASTA file for reading        */
+  char    *buf = NULL;          /* growable buffer for esl_fgets()      */
+  int      n = 0;               /* size of buffer                       */
+
+  seqname = argv[1];
+  ssifile = argv[2];
+
+  if (esl_ssi_Open(ssifile, &ssi)                              != eslOK) esl_fatal("open failed");
+  if (esl_ssi_FindName(ssi, seqname, &fh, &offset, NULL, NULL) != eslOK) esl_fatal("find failed");
+  if (esl_ssi_FileInfo(ssi, fh, &fafile, &fmt)                 != eslOK) esl_fatal("info failed");
+  /* you can't close the ssi file yet - fafile is pointing into it! */
+
+  if ((fp = fopen(fafile, "r"))     == NULL)  esl_fatal("failed to open %s", fafile);
+  if (fseeko(fp, offset, SEEK_SET)  != 0)     esl_fatal("failed to position %s", fafile);
+  if (esl_fgets(&buf, &n, fp)       != eslOK) esl_fatal("failed to get name/desc line");
+  do {
+    printf("%s", buf); 
+  } while (esl_fgets(&buf, &n, fp) == eslOK && *buf != '>');
+  
+  esl_ssi_Close(ssi);  
+  fclose(fp);  
+  free(buf);
+  return 0;
+}
+\end{cchunk}

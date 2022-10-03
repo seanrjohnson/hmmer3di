@@ -1,0 +1,186 @@
+\begin{sreapi}
+\hypertarget{func:esl_exp_pdf()}
+{\item[double esl\_exp\_pdf(double x, double mu, double lambda)]}
+
+Calculates the probability density function for the
+exponential, $P(X=x)$, given value \ccode{x}, offset \ccode{mu},
+and decay parameter \ccode{lambda}.
+
+
+\hypertarget{func:esl_exp_logpdf()}
+{\item[double esl\_exp\_logpdf(double x, double mu, double lambda)]}
+
+Calculates the log probability density function for the
+exponential, $P(X=x)$, given value \ccode{x}, offset \ccode{mu},
+and decay parameter \ccode{lambda}.
+
+
+\hypertarget{func:esl_exp_cdf()}
+{\item[double esl\_exp\_cdf(double x, double mu, double lambda)]}
+
+Calculates the cumulative distribution function for the
+exponential, $P(X \leq x)$, given value \ccode{x}, offset \ccode{mu},
+and decay parameter \ccode{lambda}.
+
+
+\hypertarget{func:esl_exp_logcdf()}
+{\item[double esl\_exp\_logcdf(double x, double mu, double lambda)]}
+
+Calculates the log of the cumulative distribution function
+for the exponential, $log P(X \leq x)$, given value \ccode{x},
+offset \ccode{mu}, and decay parameter \ccode{lambda}.
+
+
+\hypertarget{func:esl_exp_surv()}
+{\item[double esl\_exp\_surv(double x, double mu, double lambda)]}
+
+Calculates the survivor function, $P(X>x)$ (that is, 1-CDF,
+the right tail probability mass) for an exponential distribution,
+given value \ccode{x}, offset \ccode{mu}, and decay parameter \ccode{lambda}.
+
+
+\hypertarget{func:esl_exp_logsurv()}
+{\item[double esl\_exp\_logsurv(double x, double mu, double lambda)]}
+
+Calculates the log survivor function, $\log P(X>x)$ (that is,
+log(1-CDF), the log of the right tail probability mass) for an 
+exponential distribution, given value \ccode{x}, offset \ccode{mu}, and 
+decay parameter \ccode{lambda}.
+
+
+\hypertarget{func:esl_exp_invcdf()}
+{\item[double esl\_exp\_invcdf(double p, double mu, double lambda)]}
+
+Calculates the inverse of the CDF; given a \ccode{cdf} value
+$0 <= p < 1$, returns the value $x$ at which the CDF
+has that value.
+
+
+\hypertarget{func:esl_exp_invsurv()}
+{\item[double esl\_exp\_invsurv(double p, double mu, double lambda)]}
+
+Calculates the inverse of the survivor function, the score
+at which the right tail's mass is $0 <= p < 1$, for an
+exponential function with parameters \ccode{mu} and \ccode{lambda}.
+
+
+\hypertarget{func:esl_exp_generic_pdf()}
+{\item[double esl\_exp\_generic\_pdf(double x, void *params)]}
+
+Generic-API version of PDF.
+
+
+\hypertarget{func:esl_exp_generic_cdf()}
+{\item[double esl\_exp\_generic\_cdf(double x, void *params)]}
+
+Generic-API version of CDF.
+
+
+\hypertarget{func:esl_exp_generic_surv()}
+{\item[double esl\_exp\_generic\_surv(double x, void *params)]}
+
+Generic-API version of survival function.
+
+
+\hypertarget{func:esl_exp_generic_invcdf()}
+{\item[double esl\_exp\_generic\_invcdf(double p, void *params)]}
+
+Generic-API version of inverse CDF.
+
+
+\hypertarget{func:esl_exp_Plot()}
+{\item[int esl\_exp\_Plot(FILE *fp, double mu, double lambda, 
+	     double (*func)(double x, double mu, double lambda), 
+	     double xmin, double xmax, double xstep)]}
+
+Plot some exponential function \ccode{func} (for instance,
+\ccode{esl\_exp\_pdf()}) for parameters \ccode{mu} and \ccode{lambda}, for
+a range of values x from \ccode{xmin} to \ccode{xmax} in steps of \ccode{xstep};
+output to an open stream \ccode{fp} in xmgrace XY input format.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error, such as a filled disk.
+
+
+\hypertarget{func:esl_exp_Sample()}
+{\item[double esl\_exp\_Sample(ESL\_RANDOMNESS *r, double mu, double lambda)]}
+
+Sample an exponential random variate
+by the transformation method, given offset \ccode{mu}
+and decay parameter \ccode{lambda}.
+
+
+\hypertarget{func:esl_exp_FitComplete()}
+{\item[int esl\_exp\_FitComplete(double *x, int n, double *ret\_mu, double *ret\_lambda)]}
+
+Given an array of \ccode{n} samples \ccode{x[0]..x[n-1]}, fit
+them to an exponential distribution.
+Return maximum likelihood parameters \ccode{ret\_mu} and \ccode{ret\_lambda}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if n=0 (no data).
+
+
+
+\hypertarget{func:esl_exp_FitCompleteScale()}
+{\item[int esl\_exp\_FitCompleteScale(double *x, int n, double mu, double *ret\_lambda)]}
+
+Given an array of \ccode{n} samples \ccode{x[0]..x[n-1]}, fit
+them to an exponential distribution of known location
+parameter \ccode{mu}. Return maximum likelihood scale 
+parameter \ccode{ret\_lambda}. 
+
+All $x_i \geq \mu$.
+
+Returns \ccode{eslOK} on success.
+
+
+
+\hypertarget{func:esl_exp_FitCompleteBinned()}
+{\item[int esl\_exp\_FitCompleteBinned(ESL\_HISTOGRAM *g, double *ret\_mu, double *ret\_lambda)]}
+
+Fit a complete exponential distribution to the observed
+binned data in a histogram \ccode{g}, where each
+bin i holds some number of observed samples x with values from 
+lower bound l to upper bound u (that is, $l < x \leq u$);
+find maximum likelihood parameters $\mu,\lambda$ and 
+return them in \ccode{*ret\_mu}, \ccode{*ret\_lambda}.
+
+If the binned data in \ccode{g} were set to focus on 
+a tail by virtual censoring, the "complete" exponential is 
+fitted to this tail. The caller then also needs to
+remember what fraction of the probability mass was in this
+tail.
+
+The ML estimate for $mu$ is the smallest observed
+sample.  For complete data, \ccode{ret\_mu} is generally set to
+the smallest observed sample value, except in the
+special case of a "rounded" complete dataset, where
+\ccode{ret\_mu} is set to the lower bound of the smallest
+occupied bin. For tails, \ccode{ret\_mu} is set to the cutoff
+threshold \ccode{phi}, where we are guaranteed that \ccode{phi} is
+at the lower bound of a bin (by how the histogram
+object sets tails). 
+
+The ML estimate for \ccode{ret\_lambda} has an analytical 
+solution, so this routine is fast. 
+
+If all the data are in one bin, the ML estimate of
+$\lambda$ will be $\infty$. This is mathematically correct,
+but is probably a situation the caller wants to avoid, perhaps
+by choosing smaller bins.
+
+This function currently cannot fit an exponential tail
+to truly censored, binned data, because it assumes that
+all bins have equal width, but in true censored data, the
+lower cutoff \ccode{phi} may fall anywhere in the first bin.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if dataset is true-censored.
+
+
+\end{sreapi}
+

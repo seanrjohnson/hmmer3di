@@ -1,0 +1,378 @@
+\begin{sreapi}
+\hypertarget{func:esl_mpi_PackOpt()}
+{\item[int esl\_mpi\_PackOpt(void *inbuf, int incount, MPI\_Datatype type, void *pack\_buf, int pack\_buf\_size, int *position, MPI\_Comm comm)]}
+
+Pack data array \ccode{inbuf} of \ccode{incount} elements of type \ccode{type} into
+an MPI packed buffer \ccode{pack\_buf} of total size \ccode{pack\_buf\_size} destined
+for MPI communicator \ccode{comm} that is currently filled to position \ccode{*position}.
+
+\ccode{inbuf} may be \ccode{NULL}, in which case \ccode{incount} is
+assumed to be 0, and a `null array' is packed that
+\ccode{esl\_mpi\_UnpackOpt()} knows how to decode as a \ccode{NULL}
+pointer.
+
+As a special case for strings, if \ccode{type} is \ccode{MPI\_CHAR},
+\ccode{incount} may be passed as \ccode{-1} to indicate `unknown';
+the routine will use \ccode{strlen(inbuf)+1} to determine the
+size of the string including its \ccode{NUL} terminator.
+
+Returns \ccode{eslOK} on success, the array is packed into \ccode{pack\_buf}, 
+and the \ccode{*position} counter is updated to point to the next byte
+in \ccode{pack\_buf} after the packed array.
+
+Throws \ccode{eslESYS} if an MPI call fails.
+
+
+\hypertarget{func:esl_mpi_PackOptSize()}
+{\item[int esl\_mpi\_PackOptSize(void *inbuf, int incount, MPI\_Datatype type, MPI\_Comm comm, int *ret\_n)]}
+
+Determine an upper bound on the size (in bytes) required
+to pack an array \ccode{inbuf} of \ccode{incount} elements of type
+\ccode{type} destined for MPI communicator \ccode{comm} using
+\ccode{esl\_mpi\_PackOpt()}, and return it in \ccode{*ret\_n}.
+
+If \ccode{inbuf} is non-\ccode{NULL}, the packed message consists
+of 1 integer (the length, \ccode{incount}) followed by the array.
+If \ccode{inbuf} is \ccode{NULL}, the packed message consists of one
+integer (0). 
+
+As a special case for strings, if \ccode{type} is \ccode{MPI\_CHAR},
+\ccode{incount} may be passed as \ccode{-1} to indicate `unknown';
+in this case, the routine uses \ccode{strlen(inbuf)+1} to determine the
+size of the string including its \ccode{NUL} terminator.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_n} contains the upper limit size in
+bytes.
+
+Throws \ccode{eslESYS} if an MPI call fails, and \ccode{*ret\_n} is 0.           
+
+
+\hypertarget{func:esl_mpi_UnpackOpt()}
+{\item[int esl\_mpi\_UnpackOpt(void *pack\_buf, int pack\_buf\_size, int *pos, void **outbuf, int *opt\_n, MPI\_Datatype type, MPI\_Comm comm)]}
+
+Unpack a packed MPI message in buffer \ccode{pack\_buf}, of total size
+\ccode{pack\_buf\_size}, at current position \ccode{*pos} in \ccode{pack\_buf},
+for MPI communicator \ccode{comm}, where the next packed element is an optional
+array of type \ccode{type}, consisting of a \ccode{(n,data)} pair, with \ccode{n=0}
+indicating no data. 
+
+If array data is present (\ccode{n}0>), allocate \ccode{*outbuf},
+put the array in it, and optionally return \ccode{n} in
+\ccode{*opt\_n}. The caller is responsible for free'ing this
+\ccode{*outbuf}.
+
+If data are not present (\ccode{n=0}), no allocation is done,
+\ccode{*outbuf} is set to \ccode{NULL}, and the optional \ccode{*opt\_n} is
+0.
+
+\ccode{*pos} is updated to point at the next element in \ccode{pack\_buf}
+that needs to be unpacked.
+
+This routine is designed for an optional-array idiom in
+which \ccode{array==NULL} means the array isn't available, and
+otherwise the array contains valid data. For instance,
+this is used for optional annotation on multiple
+alignments. 
+
+Returns \ccode{eslOK} on success; \ccode{*pos} is updated; \ccode{*outbuf} is either a newly allocated 
+array (that caller is responsible for freeing) and optional \ccode{*opt\_n}
+is its length, or \ccode{*outbuf} is \ccode{NULL} and optional \ccode{*opt\_n} is 0.
+
+Throws \ccode{eslESYS} on an MPI call failure; \ccode{eslEINVAL} if something's wrong
+with the arguments; \ccode{eslEMEM} on allocation failure. 
+In either case, \ccode{*outbuf} is \ccode{NULL} and optional \ccode{*opt\_n} is 0.
+
+
+\hypertarget{func:esl_sq_MPISend()}
+{\item[int esl\_sq\_MPISend(ESL\_SQ *sq, int dest, int tag, MPI\_Comm comm, char **buf, int *nalloc)]}
+
+Sends an \ccode{ESL\_SQ} \ccode{esl\_sq} as a work unit to MPI process
+\ccode{dest} (where \ccode{dest} ranges from 0..\ccode{nproc-1}), tagged
+with MPI tag \ccode{tag}, for MPI communicator \ccode{comm}, as 
+the sole workunit or result. 
+
+Work units are prefixed by a status code. If \ccode{esl\_sq} is
+\ccode{non-NULL}, the work unit is an \ccode{eslOK} code followed by
+the packed \ccode{ESL\_SQ}. If \ccode{esl\_sq} is NULL, the work unit is an
+\ccode{eslEOD} code, which \ccode{esl\_sq\_MPIRecv()} knows how to
+interpret; this is typically used for an end-of-data
+signal to cleanly shut down worker processes.
+
+In order to minimize alloc/free cycles in this routine,
+caller passes a pointer to a working buffer \ccode{*buf} of
+size \ccode{*nalloc} characters. If necessary (i.e. if \ccode{esl\_sq} is
+too big to fit), \ccode{*buf} will be reallocated and \ccode{*nalloc}
+increased to the new size. As a special case, if \ccode{*buf}
+is \ccode{NULL} and \ccode{*nalloc} is 0, the buffer will be
+allocated appropriately, but the caller is still
+responsible for free'ing it.
+
+Returns \ccode{eslOK} on success; \ccode{*buf} may have been reallocated and
+\ccode{*nalloc} may have been increased.
+
+Throws \ccode{eslESYS} if an MPI call fails; \ccode{eslEMEM} if a malloc/realloc
+fails. In either case, \ccode{*buf} and \ccode{*nalloc} remain valid and useful
+memory (though the contents of \ccode{*buf} are undefined). 
+
+
+
+\hypertarget{func:esl_sq_MPIPackSize()}
+{\item[int esl\_sq\_MPIPackSize(ESL\_SQ *sq, MPI\_Comm comm, int *ret\_n)]}
+
+Calculate an upper bound on the number of bytes
+that \ccode{esl\_sq\_MPIPack()} will need to pack an \ccode{ESL\_SQ}
+\ccode{sq} in a packed MPI message for MPI communicator
+\ccode{comm}; return that number of bytes in \ccode{*ret\_n}.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_n} contains the answer.
+
+Throws \ccode{eslESYS} if an MPI call fails, and \ccode{*ret\_n} is 0.
+
+
+\hypertarget{func:esl_sq_MPIPack()}
+{\item[int esl\_sq\_MPIPack(ESL\_SQ *sq, char *buf, int n, int *pos, MPI\_Comm comm)]}
+
+Packs \ccode{ESL\_SQ} \ccode{esl\_sq} into an MPI packed message buffer \ccode{buf}
+of length \ccode{n} bytes, starting at byte position \ccode{*position},
+for MPI communicator \ccode{comm}.
+
+The caller must know that \ccode{buf}'s allocation of \ccode{n}
+bytes is large enough to append the packed \ccode{ESL\_SQ} at
+position \ccode{*pos}. This typically requires a call to
+\ccode{esl\_sq\_MPIPackSize()} first, and reallocation if
+needed.
+
+Returns \ccode{eslOK} on success; \ccode{buf} now contains the
+packed \ccode{esl\_sq}, and \ccode{*position} is set to the byte
+immediately following the last byte of the \ccode{ESL\_SQ}
+in \ccode{buf}. 
+
+Throws \ccode{eslESYS} if an MPI call fails; or \ccode{eslEMEM} if the
+buffer's length \ccode{n} was overflowed in trying to pack
+\ccode{sq} into \ccode{buf}. In either case, the state of
+\ccode{buf} and \ccode{*position} is undefined, and both should
+be considered to be corrupted.
+
+
+\hypertarget{func:esl_sq_MPIUnpack()}
+{\item[int esl\_sq\_MPIUnpack(const ESL\_ALPHABET *abc, char *buf, int n, int *pos, MPI\_Comm comm, ESL\_SQ **ret\_sq)]}
+
+Unpack a newly allocated \ccode{ESL\_SQ} from MPI packed buffer
+\ccode{buf}, starting from position \ccode{*pos}, where the total length
+of the buffer in bytes is \ccode{n}. 
+
+Caller may or may not already know what alphabet the \ccode{ESL\_SQ}
+is expected to be in.  
+
+Returns \ccode{eslOK} on success. \ccode{*pos} is updated to the position of
+the next element in \ccode{buf} to unpack (if any). \ccode{*ret\_hmm}
+contains a newly allocated \ccode{ESL\_SQ}, which the caller is
+responsible for free'ing. 
+
+
+Throws \ccode{eslESYS} on an MPI call failure. \ccode{eslEMEM} on allocation failure.
+In either case, \ccode{*ret\_esl\_sq} is \ccode{NULL}, and the state of \ccode{buf}
+and \ccode{*pos} is undefined and should be considered to be corrupted.
+
+
+\hypertarget{func:esl_sq_MPIRecv()}
+{\item[int esl\_sq\_MPIRecv(int source, int tag, MPI\_Comm comm, const ESL\_ALPHABET *abc, char **buf, int *nalloc, ESL\_SQ **ret\_sq)]}
+
+Receive a work unit that consists of a single \ccode{ESL\_SQ}
+sent by MPI \ccode{source} (\ccode{0..nproc-1}, or
+\ccode{MPI\_ANY\_SOURCE}) tagged as \ccode{tag} for MPI communicator \ccode{comm}.
+
+Work units are prefixed by a status code. If the unit's
+code is \ccode{eslOK} and no errors are encountered, this
+routine will return \ccode{eslOK} and a non-\ccode{NULL} \ccode{*ret\_esl\_sq}.
+If the unit's code is \ccode{eslEOD} (a shutdown signal), 
+this routine returns \ccode{eslEOD} and \ccode{*ret\_esl\_sq} is \ccode{NULL}.
+
+Caller provides a working buffer \ccode{*buf} of size
+\ccode{*nalloc} characters. These are passed by reference, so
+that \ccode{*buf} can be reallocated and \ccode{*nalloc} increased
+if necessary. As a special case, if \ccode{*buf} is \ccode{NULL} and
+\ccode{*nalloc} is 0, the buffer will be allocated
+appropriately, but the caller is still responsible for
+free'ing it.
+
+Returns \ccode{eslOK} on success. \ccode{*ret\_esl\_sq} contains the received \ccode{ESL\_SQ};
+it is allocated here, and the caller is responsible for
+free'ing it.  \ccode{*buf} may have been reallocated to a
+larger size, and \ccode{*nalloc} may have been increased. 
+
+Throws \ccode{eslEMEM} on allocation error, in which case \ccode{*ret\_esl\_sq} is 
+\ccode{NULL}.           
+
+
+\hypertarget{func:esl_msa_MPISend()}
+{\item[int esl\_msa\_MPISend(const ESL\_MSA *msa, int dest, int tag, MPI\_Comm comm, char **buf, int *nalloc)]}
+
+Sends the essential elements of a multiple alignment \ccode{msa} 
+as a work unit to MPI process \ccode{dest} (\ccode{dest} ranges from \ccode{0..nproc-1}),
+tagging the message with MPI tag \ccode{tag} for MPI communicator
+\ccode{comm}. The receiver uses \ccode{esl\_msa\_MPIRecv()} to receive the MSA.
+
+Work units are prefixed by a status code. If \ccode{msa} is
+\ccode{non-NULL}, the work unit is an \ccode{eslOK} code followed by
+the packed MSA. If \ccode{msa} is NULL, the work unit is an
+\ccode{eslEOD} code, which \ccode{esl\_msa\_hmm\_MPIRecv()} knows how
+to interpret; this is typically used for an end-of-data
+signal to cleanly shut down worker processes.
+
+Only an essential subset of the elements in \ccode{msa} are
+transmitted, sufficient to do computationally intensive
+work on the \ccode{msa}. Most msa annotation is not
+transmitted, for example. Specifically, \ccode{name}, \ccode{nseq},
+\ccode{alen}, \ccode{flags}, \ccode{wgt}, \ccode{ax} or \ccode{aseq}, \ccode{desc}, \ccode{acc},
+\ccode{au}, \ccode{ss\_cons}, \ccode{sa\_cons}, \ccode{rf}, \ccode{cutoff}, and \ccode{cutset}
+are transmitted.
+
+In order to minimize alloc/free cycles, caller passes a
+pointer to a working buffer \ccode{*buf} of size \ccode{*nalloc}
+characters. If necessary (i.e. if \ccode{msa} is too big to
+fit), \ccode{*buf} will be reallocated and \ccode{*nalloc} increased
+to the new size. As a special case, if \ccode{*buf} is \ccode{NULL}
+and \ccode{*nalloc} is 0, the buffer will be allocated
+appropriately, but the caller is still responsible for
+free'ing it.
+
+Returns \ccode{eslOK} on success; \ccode{*buf} may have been reallocated and
+\ccode{*nalloc} may have been increased.
+
+Throws \ccode{eslESYS} if an MPI call fails; \ccode{eslEMEM} if a malloc/realloc
+fails. In either case, \ccode{*buf} and \ccode{*nalloc} remain valid and useful
+memory (though the contents of \ccode{*buf} are undefined). 
+
+
+
+\hypertarget{func:esl_msa_MPIPackSize()}
+{\item[int esl\_msa\_MPIPackSize(const ESL\_MSA *msa, MPI\_Comm comm, int *ret\_n)]}
+
+Calculate an upper bound on the number of bytes
+that \ccode{esl\_msa\_MPIPack()} will need to pack an 
+essential subset of the data in MSA \ccode{msa}
+in a packed MPI message in communicator \ccode{comm};
+return that number of bytes in \ccode{*ret\_n}. 
+
+Caller will generally use this result to determine how
+to allocate a buffer before starting to pack into it.
+
+If \ccode{msa} is \ccode{NULL} (which can happen, if \ccode{msa} is
+optional in the caller), size \ccode{*ret\_n} is set to 0.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_n} contains the answer.
+
+Throws \ccode{eslESYS} if an MPI call fails, and \ccode{*ret\_n} is set to 0. 
+
+
+
+\hypertarget{func:esl_msa_MPIPack()}
+{\item[int esl\_msa\_MPIPack(const ESL\_MSA *msa, char *buf, int n, int *position, MPI\_Comm comm)]}
+
+Packs essential subset of data in MSA \ccode{msa} into an MPI
+packed message buffer \ccode{buf} of length \ccode{n} bytes,
+starting at byte position \ccode{*position}, for MPI
+communicator \ccode{comm}.
+
+If \ccode{msa} is \ccode{NULL} (which can happen, if \ccode{msa} is being
+treated as optional in the caller), does nothing, and
+just return \ccode{eslOK}.
+
+Returns \ccode{eslOK} on success; \ccode{buf} now contains the
+packed \ccode{msa}, and \ccode{*position} is set to the byte
+immediately following the last byte of the MSA
+in \ccode{buf}. 
+
+Throws \ccode{eslESYS} if an MPI call fails; or \ccode{eslEMEM} if the
+buffer's length \ccode{n} is overflowed by trying to pack
+\ccode{msa} into \ccode{buf}. In either case, the state of
+\ccode{buf} and \ccode{*position} is undefined, and both should
+be considered to be corrupted.
+
+
+
+\hypertarget{func:esl_msa_MPIUnpack()}
+{\item[int esl\_msa\_MPIUnpack(const ESL\_ALPHABET *abc, char *buf, int n, int *pos, MPI\_Comm comm, ESL\_MSA **ret\_msa)]}
+
+Unpack a newly allocated MSA from MPI packed buffer
+\ccode{buf}, starting from position \ccode{*pos}, where the total length
+of the buffer in bytes is \ccode{n}. 
+
+MSAs are usually transmitted in digital mode. In digital
+mode, caller must provide the alphabet \ccode{abc} for this
+MSA. (Thus the caller already know it before the MSA
+arrives, by an appropriate initialization.) If MSAs are
+being transmitted in text mode, \ccode{abc} is ignored; caller
+may pass \ccode{NULL} for it.
+
+Returns \ccode{eslOK} on success. \ccode{*pos} is updated to the position of
+the next element in \ccode{buf} to unpack (if any). \ccode{*ret\_msa}
+contains a newly allocated MSA, which the caller is 
+responsible for free'ing.
+
+Throws \ccode{eslESYS} on an MPI call failure. \ccode{eslEMEM} on allocation failure.
+In either case, \ccode{*ret\_msa} is \ccode{NULL}, and the state of \ccode{buf}
+and \ccode{*pos} is undefined and should be considered to be corrupted.
+
+
+
+\hypertarget{func:esl_msa_MPIRecv()}
+{\item[int esl\_msa\_MPIRecv(int source, int tag, MPI\_Comm comm, const ESL\_ALPHABET *abc, char **buf, int *nalloc, ESL\_MSA **ret\_msa)]}
+
+Receives a work unit that consists of a single MSA from \ccode{source} (\ccode{0..nproc-1}, or
+\ccode{MPI\_ANY\_SOURCE}) tagged as \ccode{tag} from communicator \ccode{comm}.
+
+Work units are prefixed by a status code. If the unit's
+code is \ccode{eslOK} and no errors are encountered, this
+routine will return \ccode{eslOK} and a non-\ccode{NULL} \ccode{*ret\_msa}.
+If the unit's code is \ccode{eslEOD} (a shutdown signal), 
+this routine returns \ccode{eslEOD} and \ccode{*ret\_msa} is \ccode{NULL}.
+
+MSAs are transmitted in digital mode. Caller must know and
+provide the alphabet \ccode{abc} for this MSA.
+
+To minimize alloc/free cycles in this routine, caller
+passes a pointer to a buffer \ccode{*buf} of size \ccode{*nalloc}
+characters. These are passed by reference, because when
+necessary, \ccode{*buf} will be reallocated and \ccode{*nalloc}
+increased to the new size. As a special case, if \ccode{*buf}
+is \ccode{NULL} and \ccode{*nalloc} is 0, the buffer will be
+allocated appropriately, but the caller is still
+responsible for free'ing it.
+
+If the packed MSA is an end-of-data signal, return
+\ccode{eslEOD}, and \ccode{*ret\_msa} is \ccode{NULL}.
+
+Returns \ccode{eslOK} on success. \ccode{*ret\_msa} contains the new MSA; it
+is allocated here, and the caller is responsible for
+free'ing it.  \ccode{*buf} may have been reallocated to a
+larger size, and \ccode{*nalloc} may have been increased.
+
+
+Throws \ccode{eslESYS} if an MPI call fails; \ccode{eslEMEM} if an allocation fails.
+In either case, \ccode{*ret\_msa} is NULL, and the \ccode{buf} and its size
+\ccode{*nalloc} remain valid.
+
+
+\hypertarget{func:esl_stopwatch_MPIReduce()}
+{\item[int esl\_stopwatch\_MPIReduce(ESL\_STOPWATCH *w, int root, MPI\_Comm comm)]}
+
+Collect all user/sys times from stopped stopwatch \ccode{w} from
+all MPI processes, and sum them into the watch on the
+master process of rank \ccode{root}, for MPI communicator
+\ccode{comm}.  A subsequent \ccode{esl\_stopwatch\_Display()} will
+then show total user/sys times, not just the master's
+usage.
+
+This routine needs to be called synchronously on all
+processes; it does a collective communication using
+\ccode{MPI\_Reduce()}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslESYS} on MPI call failure.
+
+
+\end{sreapi}
+

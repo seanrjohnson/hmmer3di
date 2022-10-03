@@ -1,0 +1,8 @@
+\begin{cchunk}
+  char  **aseq;       /* alignment itself, [0..nseq-1][0..alen-1], \0-terminated */
+  char  **sqname;     /* sequence names [0..nseq-1][], \0-terminated             */
+  double *wgt;        /* sequence weights [0..nseq-1], default 1.0               */
+  int64_t alen;       /* length of alignment (columns); or (if growable) -1      */
+  int     nseq;       /* number of seqs in alignment; or (if growable) blocksize */
+  int     flags;      /* flags for what info has been set                        */
+\end{cchunk}

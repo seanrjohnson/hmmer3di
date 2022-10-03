@@ -1,0 +1,31 @@
+\begin{cchunk}
+#define eslOK              0    /* no error/success             */
+#define eslFAIL            1    /* failure                      */
+#define eslEOL             2    /* end-of-line (often normal)   */
+#define eslEOF             3    /* end-of-file (often normal)   */
+#define eslEOD             4    /* end-of-data (often normal)   */
+#define eslEMEM            5    /* malloc or realloc failed     */
+#define eslENOTFOUND       6    /* file or key not found        */
+#define eslEFORMAT         7    /* file format not correct      */
+#define eslEAMBIGUOUS      8    /* an ambiguity of some sort    */
+#define eslEDIVZERO        9    /* attempted div by zero        */
+#define eslEINCOMPAT      10    /* incompatible parameters      */
+#define eslEINVAL         11    /* invalid argument/parameter   */
+#define eslESYS           12    /* generic system call failure  */
+#define eslECORRUPT       13    /* unexpected data corruption   */
+#define eslEINCONCEIVABLE 14    /* "can't happen" error         */
+#define eslESYNTAX        15    /* invalid user input syntax    */
+#define eslERANGE         16    /* value out of allowed range   */
+#define eslEDUP           17    /* saw a duplicate of something */
+#define eslENOHALT        18    /* a failure to converge        */      
+#define eslENORESULT      19    /* no result was obtained       */
+#define eslENODATA        20    /* no data provided, file empty */
+#define eslETYPE          21    /* invalid type of argument     */
+#define eslEOVERWRITE     22    /* attempted to overwrite data  */
+#define eslENOSPACE       23    /* ran out of some resource     */
+#define eslEUNIMPLEMENTED 24    /* feature is unimplemented     */
+#define eslENOFORMAT      25	/* couldn't guess file format   */
+#define eslENOALPHABET    26	/* couldn't guess seq alphabet  */
+#define eslEWRITE         27   	/* write failed (fprintf, etc)  */
+#define eslEINACCURATE    28    /* return val may be inaccurate */
+\end{cchunk}

@@ -1,0 +1,105 @@
+\begin{cchunk}
+#include "easel.h"
+#include "esl_alphabet.h"
+#include "esl_fileparser.h"
+#include "esl_getopts.h"
+#include "esl_dmatrix.h"
+#include "esl_vectorops.h"
+#include "esl_scorematrix.h"
+
+static ESL_OPTIONS options[] = {
+  /* name             type          default  env  range    toggles          reqs incomp  help                                       docgroup*/
+  { "-h",          eslARG_NONE,       FALSE,  NULL, NULL,  NULL,             NULL, NULL, "show brief help on version and usage",        0 },
+  { "--dna",       eslARG_NONE,       FALSE,  NULL, NULL,  "--dna,--amino",  NULL, NULL, "use DNA alphabet",                            0 },
+  { "--amino",     eslARG_NONE,      "TRUE",  NULL, NULL,  "--dna,--amino",  NULL, NULL, "use protein alphabet",                        0 },
+  {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+};
+static char usage[]  = "[-options] <mxfile>";
+static char banner[] = "example of using easel scorematrix routines";
+
+
+int 
+main(int argc, char **argv)
+{
+  ESL_GETOPTS     *go        = esl_getopts_CreateDefaultApp(options, 1, argc, argv, banner, usage);
+  char            *scorefile = esl_opt_GetArg(go, 1);
+  ESL_ALPHABET    *abc       = NULL;
+  ESL_FILEPARSER  *efp       = NULL;
+  ESL_SCOREMATRIX *S         = NULL;
+  ESL_DMATRIX     *P1        = NULL; /* implicit probability basis, bg unknown */
+  ESL_DMATRIX     *P2        = NULL; /* implicit probability basis, bg known   */
+  double          *fi        = NULL;
+  double          *fj        = NULL;
+  double           lambda, D, E;
+  int              vstatus;
+
+  if      (esl_opt_GetBoolean(go, "--dna"))   abc = esl_alphabet_Create(eslDNA);
+  else if (esl_opt_GetBoolean(go, "--amino")) abc = esl_alphabet_Create(eslAMINO);
+
+  /* Input a score matrix from a file. */
+  if ( esl_fileparser_Open(scorefile, NULL, &efp) != eslOK) esl_fatal("failed to open score file %s",         scorefile);
+  if ( esl_scorematrix_Read(efp, abc, &S)         != eslOK) esl_fatal("failed to read matrix from %s:\n  %s", scorefile, efp->errbuf);
+  esl_fileparser_Close(efp);
+
+  /* Try to reverse engineer it to get implicit probabilistic model. This may fail! */
+  vstatus = esl_scorematrix_Probify(S, &P1, &fi, &fj, &lambda);
+
+  if (vstatus == eslOK) 
+    { /* Print some info, and the joint probabilities. */
+
+      esl_scorematrix_RelEntropy   (S, fi, fj, lambda, &D);
+      esl_scorematrix_ExpectedScore(S, fi, fj,         &E);
+
+      printf("By Yu/Altschul (2003,2005) procedure:\n");
+      printf("Lambda           = %.4f\n",      lambda);
+      printf("Relative entropy = %.4f bits\n", D); 
+      printf("Expected score   = %.4f bits\n", E * lambda * eslCONST_LOG2R);
+
+      printf("p_ij's are:\n");  esl_dmatrix_Dump(stdout, P1, abc->sym, abc->sym);
+      printf("fi's are:\n");    esl_vec_DDump(stdout, fi, S->K, abc->sym);
+      printf("fj's are:\n");    esl_vec_DDump(stdout, fj, S->K, abc->sym);
+      printf("============================================================\n\n");
+      }
+  else
+    {
+      printf("Yu/Altschul procedure FAILS to find a valid implicit probability basis!\n");
+      printf("Lambda  = %.4f\n",      lambda);
+      printf("p_ij's are:\n");  esl_dmatrix_Dump(stdout, P1, abc->sym, abc->sym);
+      printf("fi's are:\n");    esl_vec_DDump(stdout, fi, S->K, abc->sym);
+      printf("fj's are:\n");    esl_vec_DDump(stdout, fj, S->K, abc->sym);
+      printf("============================================================\n\n");
+
+      esl_composition_BL62(fi); esl_composition_BL62(fj);
+    }
+
+  /* Now reverse engineer it again, this time using "known" background probs */
+  esl_scorematrix_ProbifyGivenBG(S, fi, fj, &lambda, &P2);
+  esl_scorematrix_RelEntropy   (S, fi, fj, lambda,   &D);
+  esl_scorematrix_ExpectedScore(S, fi, fj,           &E);
+
+  printf("By solving for lambda from given background frequencies:\n");
+  printf("Lambda           = %.4f\n",      lambda);
+  printf("Relative entropy = %.4f bits\n", D); 
+  printf("Expected score   = %.4f bits\n", E * lambda * eslCONST_LOG2R);
+
+  printf("p_ij's are:\n");   esl_dmatrix_Dump(stdout, P2, abc->sym, abc->sym);
+  printf("fi's are:\n");     esl_vec_DDump(stdout, fi, S->K, abc->sym);
+  printf("fj's are:\n");     esl_vec_DDump(stdout, fj, S->K, abc->sym);
+  printf("============================================================\n\n");
+
+
+  /* Now recalculate a score matrix from the probabilistic basis */
+  printf("Before:\n");
+  esl_scorematrix_Write(stdout, S);
+  printf("After:\n");
+  esl_scorematrix_SetFromProbs(S, lambda, P2, fi, fj);
+  esl_scorematrix_Write(stdout, S);
+
+  free(fi); free(fj);
+  esl_dmatrix_Destroy(P1);  esl_dmatrix_Destroy(P2);
+  esl_scorematrix_Destroy(S);
+  esl_alphabet_Destroy(abc);
+  esl_getopts_Destroy(go);
+  return 0;
+}
+\end{cchunk}

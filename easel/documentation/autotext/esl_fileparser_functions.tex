@@ -1,0 +1,233 @@
+\begin{sreapi}
+\hypertarget{func:esl_fileparser_Open()}
+{\item[int esl\_fileparser\_Open(const char *filename, const char *envvar, ESL\_FILEPARSER **ret\_efp)]}
+
+Opens \ccode{filename} for reading. 
+
+As a special case, if \ccode{filename} is "-", set up the
+fileparser to read and parse \ccode{stdin}.
+
+\ccode{envvar} is optional name of an environment variable,
+such as \ccode{BLASTDB}. This environment variable contains a
+colon-delimited list of directories in which the
+\ccode{filename} may lie relative to.  We looks first relative
+to the current working directory, then in any
+directories specified by \ccode{envvar}. If \ccode{envvar} is \ccode{NULL},
+we only look in the current working directory.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_fp} points
+to a new \ccode{ESL\_FILEPARSER} object.
+
+Returns \ccode{eslENOTFOUND} if \ccode{filename} can't
+be opened for reading, and \ccode{ret\_fp} is set
+to \ccode{NULL}.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_fileparser_Create()}
+{\item[ESL\_FILEPARSER * esl\_fileparser\_Create(FILE *fp)]}
+
+Take an open file \ccode{fp}, and transform it to
+a fileparser object -- preparing to parse it
+one whitespace-delimited field at a time.
+
+Returns a new \ccode{ESL\_FILEPARSER} object, which must be 
+free'd by the caller with \ccode{esl\_fileparser\_Destroy()}.
+
+Throws \ccode{eslEMEM} if an allocation failed.
+
+
+
+\hypertarget{func:esl_fileparser_CreateMapped()}
+{\item[ESL\_FILEPARSER * esl\_fileparser\_CreateMapped(const void *buffer, int size)]}
+
+Sets up a memory buffer to be parsed with the
+file parser routines.Take an open file \ccode{fp}, and transform it to
+a fileparser object -- preparing to parse it
+one whitespace-delimited field at a time.
+
+Returns a new \ccode{ESL\_FILEPARSER} object, which must be 
+free'd by the caller with \ccode{esl\_fileparser\_Destroy()}.
+
+Throws \ccode{eslEMEM} if an allocation failed.
+
+
+
+\hypertarget{func:esl_fileparser_SetCommentChar()}
+{\item[int esl\_fileparser\_SetCommentChar(ESL\_FILEPARSER *efp, char c)]}
+
+Defines a single character \ccode{c} for comments. Anything
+on a line following this character is ignored
+when parsing.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_fileparser_GetToken()}
+{\item[int esl\_fileparser\_GetToken(ESL\_FILEPARSER *efp, char **opt\_tok, int *opt\_toklen)]}
+
+Sets a pointer to the next field in the 
+file we're parsing.
+
+The \ccode{opt\_tok} pointer is into an internal line buffer
+that may be invalidated upon the next call to a
+\ccode{fileparser} function. If you want to store it, make a
+copy.
+
+Returns \ccode{eslOK} if \ccode{tok}, \ccode{toklen} contain valid data.
+\ccode{eslEOF} on normal end-of-file.
+
+Throws \ccode{eslEMEM} if an allocation fails.
+
+
+
+\hypertarget{func:esl_fileparser_NextLine()}
+{\item[int esl\_fileparser\_NextLine(ESL\_FILEPARSER *efp)]}
+
+Advance the parser to the next non-blank, non-comment
+data line that contains at least one token. 
+
+Upon return, \ccode{efp->buf} is a data-containing line, and
+\ccode{efp->s} points to the first non-whitespace character on
+it. A line-based parser can work on one or both of these.
+
+A line-oriented but token-based parser will call
+\ccode{esl\_fileparser\_GetTokenOnLine()} to extract successive
+tokens from it.
+
+A pure token-based parser will generally not call
+\ccode{\_NextLine()}.  The only reason would be to skip the
+remainder of a line it's in the middle of parsing, and
+advance to the next one -- but that's a sort of
+line-oriented thing to do.
+
+Returns \ccode{eslOK} on success.
+\ccode{eslEOF} if no more data lines remain in the file.  
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_fileparser_NextLinePeeked()}
+{\item[int esl\_fileparser\_NextLinePeeked(ESL\_FILEPARSER *efp, char *prefix, int plen)]}
+
+Sometimes we need to peek at the start of an input stream
+to see whether it is in a binary format, before we start
+parsing it as ASCII lines. When this happens, the caller
+will typically have used \ccode{fread()} to read a fixed
+number of bytes from the input stream, checked to see if
+they are a magic number representing a binary format,
+and found that they are not. The caller then wants to
+switch to reading in ASCII format with the \ccode{fileparser}
+API, but with those bytes included on the first
+line. Because the file might start with comments or
+blank lines that need to be skipped, we want to deal
+with the peeked data in the context of the
+\ccode{ESL\_FILEPARSER}. The caller cannot simply close and
+reopen the stream, because the stream may be a pipe
+(\ccode{stdin} or \ccode{gzip -dc} for example).
+
+The caller passes the bytes it peeked at with \ccode{fread()}
+in \ccode{prefix}, and the number of bytes it peeked at in
+\ccode{plen}.
+
+The parser is advanced to the next non-blank,
+non-comment data line that contains at least one token,
+taking the prepended \ccode{prefix} into account.
+
+There is a significant flaw in this mechanism, and as a
+result the caller must be able to guarantee the
+following limitation. The first data-containing line
+must be longer than \ccode{prefix}. It is sufficient for the
+first data token to be longer than \ccode{prefix}.
+(Equivalently, if \ccode{prefix} contains any data token, it
+must not contain any newline \verb+\n+ after that data.)  The
+reason is that we need to avoid a situation where the
+concatenated prefix+nextline contains more than one data
+line, because other routines in the module assume that
+\ccode{efp->buf} is a single \verb+\n+-terminated line of input.  For
+example: HMMER save files either start with a 4-byte
+binary magic number, or with "HMMER", and "HMMER" is
+longer than 4 bytes.
+
+Returns \ccode{eslOK} on success.
+\ccode{eslEOF} if no more tokens remain in the file.  
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+
+\hypertarget{func:esl_fileparser_GetTokenOnLine()}
+{\item[int esl\_fileparser\_GetTokenOnLine(ESL\_FILEPARSER *efp, char **opt\_tok, int *opt\_toklen)]}
+
+Same as \ccode{esl\_fileparser\_GetToken()}, except that it only
+retrieves tokens from the line that the parser is
+on. When it runs out of tokens on the line, it returns
+\ccode{eslEOL}. This allows a caller to count the tokens on a
+line (whereas \ccode{GetToken()} reads through newlines
+silently).
+
+The \ccode{opt\_tok} pointer is into an internal line buffer
+that may be invalidated upon the next call to a
+\ccode{fileparser} function. If you want to store it, make a
+copy.
+
+Normally, a call to \ccode{esl\_fileparser\_GetTokenOnLine()}
+would be preceded by \ccode{esl\_fileparser\_NextLine()} to
+position the parser on the next data line with at least
+one token on it. However, you could also conceivably
+call \ccode{esl\_fileparser\_GetTokenOnLine()} after one or more
+calls to \ccode{esl\_fileparser\_GetToken()}, to get remaining
+tokens from a given line. What you can't do is to call
+\ccode{esl\_fileparser\_GetTokenOnLine()} immediately after 
+opening a file; the parser won't have a line loaded yet.
+(In this case, it would return \ccode{eslEOL}.)
+
+Returns \ccode{eslOK} on success, and the token and its length are
+in \ccode{opt\_tok} and \ccode{opt\_toklen}.
+
+Returns \ccode{eslEOL} if no more tokens exist on the line;
+in this case \ccode{opt\_tok} is set to \ccode{NULL} and \ccode{opt\_toklen}
+to 0.
+
+
+\hypertarget{func:esl_fileparser_GetRemainingLine()}
+{\item[int esl\_fileparser\_GetRemainingLine(ESL\_FILEPARSER *efp, char **ret\_s)]}
+
+Set a pointer \ccode{*ret\_s} to the rest of the current line
+held by the fileparser \ccode{efp}. Trailing newline char,
+if any, is removed.
+
+Because \ccode{ret\_s} points to internal storage in the
+fileparser, the caller should be finished with it before
+making its next call to any fileparser function.
+
+Any comment characters on the rest of the line are
+ignored: this is designed for a case where the rest of
+the line is to be read as free text.
+
+Returns \ccode{eslOK} on success.
+\ccode{eslEOL} if nothing remains on the line, and \ccode{*ret\_s}
+is \ccode{NULL}.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_fileparser_Destroy()}
+{\item[void esl\_fileparser\_Destroy(ESL\_FILEPARSER *efp)]}
+
+Frees an open \ccode{ESL\_FILEPARSER}. The original fp is
+still open - whoever opened it is still
+responsible for closing it.
+
+
+
+\hypertarget{func:esl_fileparser_Close()}
+{\item[void esl\_fileparser\_Close(ESL\_FILEPARSER *efp)]}
+
+Closes an open \ccode{ESL\_FILEPARSER}, including the 
+file it opened. 
+
+
+\end{sreapi}
+

@@ -1,0 +1,147 @@
+\begin{sreapi}
+\hypertarget{func:esl_wuss2ct()}
+{\item[int esl\_wuss2ct(char *ss, int len, int *ct)]}
+
+Given a secondary structure string \ccode{ss}, \ccode{0..len-1},
+in WUSS notation, convert it to a CT array, \ccode{1..len},
+in \ccode{ct}. Caller provides a \ccode{ct} allocated for at least 
+\ccode{len+1} ints. \ccode{ct[i]} is the position that residue i
+base pairs to, or 0 if i is unpaired. \ccode{ct[0]} is undefined
+(but if you care: it is set to 0).
+
+WUSS notation is interpreted loosely here, as input
+WUSS.  Any matching bracket pair or upper/lower case
+alphabetic pair is interpreted as a base pair; any other
+WUSS annotation is interpreted as unpaired.
+
+Returns \ccode{eslOK} on success. Returns \ccode{eslESYNTAX} if the WUSS
+string isn't valid.
+
+Throws \ccode{eslEMEM} on allocation failure.           
+
+
+\hypertarget{func:esl_ct2wuss()}
+{\item[int esl\_ct2wuss(int *ct, int n, char *ss)]}
+
+Convert a CT array \ccode{ct} for \ccode{n} residues (1..n) to a WUSS
+format string \ccode{ss}. \ccode{ss} must be allocated for at least
+n+1 chars (+1 for the terminal NUL). 
+
+ER, Sat Aug 18 13:22:03 EDT 2012 
+esl\_ct2wuss() extended to deal with pseudoknots structures.
+Pseudoknots are annotated as AA...aa, BB...bb,..., ZZ..zz.
+Attemting to convert a \ccode{ct} that requires more letters
+than [A-Z] will return an \ccode{eslEINVAL} error.
+
+Attempting to convert a \ccode{ct} that involves triplet interactions
+will return an \ccode{eslEINVAL} error.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+\ccode{eslEINCONCEIVABLE} on internal failure.
+
+
+\hypertarget{func:esl_ct2simplewuss()}
+{\item[int esl\_ct2simplewuss(int *ct, int n, char *ss)]}
+
+Convert a CT array \ccode{ct} for \ccode{n} residues (1..n) to a simple WUSS
+format string \ccode{ss}. \ccode{ss} must be allocated for at least
+n+1 chars (+1 for the terminal NUL). 
+
+This function can be used with the \ccode{ct} of a secondary
+structure including arbitrary pseudoknots, or for the 
+\ccode{ct} or a tertiary structure (say cWH, tWH, cSS,... H bonds). 
+
+The string \ccode{ss} has basepairs annotated as \ccode{}, Aa, Bb, ..., Zz;
+unpaired bases are annotated as '.'.
+
+Attemting to convert a \ccode{ct} that requires more letters
+than [A-Z] will return an \ccode{eslEINVAL} error.
+
+Attempting to convert a \ccode{ct} that involves triplet interactions
+will return an \ccode{eslEINVAL} error.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+\ccode{eslEINCONCEIVABLE} on internal failure.
+
+
+\hypertarget{func:esl_wuss2kh()}
+{\item[int esl\_wuss2kh(char *ss, char *kh)]}
+
+Converts a secondary structure string \ccode{ss} in 
+WUSS notation back to old KHS format in \ccode{kh}.
+\ccode{kh} must be allocated for at least as much
+space as \ccode{ss}. \ccode{kh} may be the same as \ccode{ss},
+in which case the conversion is done in-place.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_kh2wuss()}
+{\item[int esl\_kh2wuss(char *kh, char *ss)]}
+
+Converts an old format secondary structure string \ccode{kh}
+to shorthand WUSS format \ccode{ss}. \ccode{ss} must be allocated at least
+as large as \ccode{kh}. \ccode{ss} can be identical to \ccode{kh}, in which
+case the conversion is done in-place.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_wuss_full()}
+{\item[int esl\_wuss\_full(char *oldss, char *newss)]}
+
+Given a simple ("input") WUSS format annotation string \ccode{oldss},
+convert it to full ("output") WUSS format in \ccode{newss}.
+\ccode{newss} must be allocated by the caller to be at least as 
+long as \ccode{oldss}. \ccode{oldss} and \ccode{newss} can be the same,
+to convert a secondary structure string in place.
+
+Pseudoknot annotation is preserved, if \ccode{oldss} had it.
+
+Returns \ccode{eslSYNTAX} if \ccode{oldss} isn't in valid WUSS format.
+
+Throws \ccode{eslEMEM} on allocation failure.
+\ccode{eslEINCONCEIVABLE} on internal error that can't happen.
+
+
+\hypertarget{func:esl_wuss_nopseudo()}
+{\item[int esl\_wuss\_nopseudo(char *ss1, char *ss2)]}
+
+Given a WUSS format annotation string \ccode{ss1},
+removes all pseudoknot annotation to create a new 
+WUSS string \ccode{ss2} that contains only a "canonical"
+(nonpseudoknotted) structure. \ccode{ss2} must be allocated to
+be at least as large as \ccode{ss1}. \ccode{ss1} and \ccode{ss2}
+may be the same, in which case the conversion is
+done in place. Pseudoknot annotation in \ccode{ss1} is
+simply replaced by \ccode{.} in \ccode{ss2}; the resulting
+\ccode{ss2} WUSS string is therefore in valid simplified format,
+but may not be valid full format WUSS.
+
+Returns \ccode{eslOK}.
+
+
+\hypertarget{func:esl_wuss_reverse()}
+{\item[int esl\_wuss\_reverse(char *ss, char *new)]}
+
+If we need to reverse complement a structure-annotated RNA
+sequence, we need to "reverse complement" the WUSS
+annotation string. Reverse complement the annotation string
+\ccode{ss} into caller-provided space \ccode{new}. To revcomp an annotation 
+in place, use \ccode{esl\_wuss\_reverse(ss, ss)}.
+
+Old SELEX files use a different structure annotation
+format, with angle brackets pointing the opposite
+direction: \ccode{>\ccode{} for a base pair. As a convenient
+side effect, <esl\_wuss\_reverse()} will also reverse
+complement SELEX annotation lines.
+
+Returns \ccode{eslOK} on success.
+
+
+\end{sreapi}
+

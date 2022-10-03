@@ -1,0 +1,302 @@
+\begin{sreapi}
+\hypertarget{func:esl_hyperexp_Create()}
+{\item[ESL\_HYPEREXP * esl\_hyperexp\_Create(int K)]}
+
+Creates an object to hold parameters for a \ccode{K}-component
+hyperexponential. 
+
+Parameters in the object are initialized 
+($q_k = \frac{1}{K}$, $\lambda_k = 1$, $\mu = 0$), but
+the caller will want to set these according to its own
+purposes.
+
+Returns ptr to newly allocated/initialized \ccode{ESL\_HYPEREXP} object.
+
+Throws NULL on allocation failure.
+
+
+\hypertarget{func:esl_hyperexp_Destroy()}
+{\item[void esl\_hyperexp\_Destroy(ESL\_HYPEREXP *h)]}
+
+Deallocates the hyperexponential parameter object \ccode{h}.
+
+Returns (void).
+
+
+\hypertarget{func:esl_hyperexp_Copy()}
+{\item[int esl\_hyperexp\_Copy(ESL\_HYPEREXP *src, ESL\_HYPEREXP *dest)]}
+
+Makes a copy of the hyperexponential parameter object \ccode{src}
+in \ccode{dest}. Caller must have already allocated \ccode{dest} to have
+(at least) the same number of components as \ccode{src}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINCOMPAT} if \ccode{dest} isn't allocated with enough
+components to hold a copy of \ccode{src}.
+
+
+\hypertarget{func:esl_hyperexp_FixedUniformMixture()}
+{\item[int esl\_hyperexp\_FixedUniformMixture(ESL\_HYPEREXP *h)]}
+
+Set the mixture coeffients to a uniform (1/K) distribution,
+and fix them there so they aren't estimable parameters.
+
+
+\hypertarget{func:esl_hyperexp_SortComponents()}
+{\item[int esl\_hyperexp\_SortComponents(ESL\_HYPEREXP *h)]}
+
+Rearrange the components in a hyperexponential in
+order of lambda values, with the highest lambda first.
+
+Stupid $O(K^2)$ selection sort algorithm here, because we
+expect $K$ to be small.
+
+
+\hypertarget{func:esl_hyperexp_Write()}
+{\item[int esl\_hyperexp\_Write(FILE *fp, ESL\_HYPEREXP *hxp)]}
+
+Write hyperexponential parameters from \ccode{hxp} to an open \ccode{fp}.
+
+The output format is suitable for input by \ccode{esl\_hyperexp\_Read()}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any write error.
+
+
+\hypertarget{func:esl_hyperexp_Dump()}
+{\item[int esl\_hyperexp\_Dump(FILE *fp, ESL\_HYPEREXP *hxp)]}
+
+Dump hyperexponential parameters from \ccode{hxp} to an open \ccode{fp},
+all on one line with no comments.
+
+The output format is suitable for input by
+\ccode{esl\_hyperexp\_Read()}, like \ccode{esl\_hyperexp\_Write()},
+though it's intended as a diagnostic dump of the
+contents of the object.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_hxp_pdf()}
+{\item[double esl\_hxp\_pdf(double x, ESL\_HYPEREXP *h)]}
+
+Returns the probability density function $P(X=x)$ for
+quantile \ccode{x}, given hyperexponential parameters \ccode{h}.
+
+
+\hypertarget{func:esl_hxp_logpdf()}
+{\item[double esl\_hxp\_logpdf(double x, ESL\_HYPEREXP *h)]}
+
+Returns the log of the PDF ($\log P(X=x)$) for quantile \ccode{x},
+given hyperexponential parameters \ccode{h}.
+
+
+\hypertarget{func:esl_hxp_cdf()}
+{\item[double esl\_hxp\_cdf(double x, ESL\_HYPEREXP *h)]}
+
+Returns the cumulative distribution function $P(X \leq x)$
+for quantile \ccode{x}, given hyperexponential parameters \ccode{h}.
+
+
+\hypertarget{func:esl_hxp_logcdf()}
+{\item[double esl\_hxp\_logcdf(double x, ESL\_HYPEREXP *h)]}
+
+Returns the log of the CDF $\log P(X \leq x)$
+for quantile \ccode{x}, given hyperexponential parameters \ccode{h}.
+
+
+\hypertarget{func:esl_hxp_surv()}
+{\item[double esl\_hxp\_surv(double x, ESL\_HYPEREXP *h)]}
+
+Returns the survivor function $P(X > x)$ (1-CDF)
+for quantile \ccode{x}, given hyperexponential parameters \ccode{h}.
+
+
+\hypertarget{func:esl_hxp_logsurv()}
+{\item[double esl\_hxp\_logsurv(double x, ESL\_HYPEREXP *h)]}
+
+Returns the log survivor function $\log P(X > x)$ (log(1-CDF))
+for quantile \ccode{x}, given hyperexponential parameters \ccode{h}.
+
+
+\hypertarget{func:esl_hxp_invcdf()}
+{\item[double esl\_hxp\_invcdf(double p, ESL\_HYPEREXP *h)]}
+
+Calculates the inverse CDF for a hyperexponential \ccode{h}
+returning the quantile \ccode{x} at which the CDF is \ccode{p}.
+
+The inverse CDF of a mixture model has no
+analytical expression as far as I'm aware. The calculation
+here is a computationally expensive, brute force bisection
+search in \ccode{x} using the CDF function. It will suffice for
+a small number of calls (for plotting applications, for example),
+but it is not sufficient for a large number of calls.
+
+
+\hypertarget{func:esl_hxp_generic_pdf()}
+{\item[double esl\_hxp\_generic\_pdf(double x, void *params)]}
+
+Generic-API version of PDF call.
+
+
+\hypertarget{func:esl_hxp_generic_cdf()}
+{\item[double esl\_hxp\_generic\_cdf(double x, void *params)]}
+
+Generic-API version of CDF call.
+
+
+\hypertarget{func:esl_hxp_generic_surv()}
+{\item[double esl\_hxp\_generic\_surv(double x, void *params)]}
+
+Generic-API version of survivor function.
+
+
+\hypertarget{func:esl_hxp_generic_invcdf()}
+{\item[double esl\_hxp\_generic\_invcdf(double p, void *params)]}
+
+Generic-API version of inverse CDF.
+
+
+\hypertarget{func:esl_hxp_Plot()}
+{\item[int esl\_hxp\_Plot(FILE *fp, ESL\_HYPEREXP *h,
+	     double (*func)(double x, ESL\_HYPEREXP *h), 
+	     double xmin, double xmax, double xstep)]}
+
+Plot some function \ccode{func} (for instance, \ccode{esl\_hxp\_pdf()})
+for hyperexponential parameters \ccode{h}, for a range of
+quantiles x from \ccode{xmin} to \ccode{xmax} in steps of \ccode{xstep};
+output to an open stream \ccode{fp} in xmgrace XY input format.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error. 
+
+
+\hypertarget{func:esl_hxp_Sample()}
+{\item[double esl\_hxp\_Sample(ESL\_RANDOMNESS *r, ESL\_HYPEREXP *h)]}
+
+Sample a random variate x from a hyperexponential \ccode{h}, 
+given random number source \ccode{r}.
+
+
+\hypertarget{func:esl_hyperexp_Read()}
+{\item[int esl\_hyperexp\_Read(ESL\_FILEPARSER *e, ESL\_HYPEREXP **ret\_hxp)]}
+
+Reads hyperexponential parameters from an open \ccode{e}.
+which is an \ccode{ESL\_FILEPARSER} tokenizer for an open stream.
+
+The first token is \ccode{K}, the number of mixture components.
+The second token is \ccode{mu}, the x offset shared by all components.
+Then for each mixture component \ccode{k=1..K}, it reads
+a mixture coefficient \ccode{q[k]} and a decay parameter
+\ccode{lambda[k]}.
+
+The \ccode{2K+2} data tokens must occur in this order, but
+they can be grouped into any number of lines, because the
+parser ignores line breaks.
+
+Anything after a \ccode{\#} character on a line is a comment, and
+is ignored.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_hxp} points to a new \ccode{ESL\_HYPEREXP}
+object.
+\ccode{eslEFORMAT} on "normal" parse failure caused by a bad file 
+format that's likely the user's fault.
+
+Throws \ccode{eslEMEM} if allocation of the new \ccode{ESL\_HYPEREXP} fails.
+
+
+
+
+\hypertarget{func:esl_hyperexp_ReadFile()}
+{\item[int esl\_hyperexp\_ReadFile(char *filename, ESL\_HYPEREXP **ret\_hxp)]}
+
+Convenience wrapper around \ccode{esl\_hyperexp\_Read()} that takes
+a filename as an argument, instead of an open \ccode{ESL\_FILEPARSER}.
+
+This lets you quickly read an object from a file, but it
+limits your ability to deal gracefully and flexibly with
+'normal' errors like 'file not found' or 'bad file format'.
+Here, all errors are fatal.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on an allocation failure.
+
+\ccode{eslEFORMAT} on any parse error. Diagnostic information is
+unavailable, because the \ccode{ESL\_FILEPARSER} that's holding 
+that information is internal to this function. 
+
+\ccode{eslENOTFOUND} on any failure to open the file.
+
+
+\hypertarget{func:esl_hxp_FitGuess()}
+{\item[int esl\_hxp\_FitGuess(double *x, int n, ESL\_HYPEREXP *h)]}
+
+Given a sorted vector of \ccode{n} observed data samples \ccode{x[]},
+from smallest \ccode{x[0]} to largest \ccode{x[n-1]}, calculate a
+very crude guesstimate of a fit -- suitable only as a starting
+point for further optimization -- and return those parameters
+in \ccode{h}.
+
+Assigns $q_k \propto \frac{1}{k}$ and  $\mu = \min_i x_i$;
+splits $x$ into $K$ roughly equal-sized bins, and
+and assigns $\lambda_k$ as the ML estimate from bin $k$.
+(If $q_k$ coefficients have already been fixed to 
+known values, this step is skipped.)
+
+
+\hypertarget{func:esl_hxp_FitComplete()}
+{\item[int esl\_hxp\_FitComplete(double *x, int n, ESL\_HYPEREXP *h)]}
+
+Given a vector of \ccode{n} observed data samples \ccode{x[]} 
+(sorted or unsorted), and an initial guess \ccode{h} for
+a hyperexponential, find maximum likelihood parameters
+by conjugate gradient descent optimization, starting
+from \ccode{h} and leaving the final optimized solution in
+\ccode{h}.
+
+Returns \ccode{eslOK} on success, and \ccode{h} contains the fitted 
+hyperexponential parameters.
+
+Throws \ccode{eslEMEM} on allocation error, and \ccode{h} is left in
+in its initial state.           
+
+
+\hypertarget{func:esl_hxp_FitGuessBinned()}
+{\item[int esl\_hxp\_FitGuessBinned(ESL\_HISTOGRAM *g, ESL\_HYPEREXP *h)]}
+
+Given a histogram \ccode{g} with binned observations;
+obtain a very crude guesstimate of a fit -- suitable only 
+as a starting point for further optimization -- and return 
+those parameters in \ccode{h}.
+
+Assigns $q_k \propto \frac{1}{k}$ and  $\mu = \min_i x_i$;
+splits $x$ into $K$ roughly equal-sized bins, and
+and assigns $\lambda_k$ as the ML estimate from bin $k$.
+If the coefficients have already been set to known values,
+this step is skipped.
+
+
+\hypertarget{func:esl_hxp_FitCompleteBinned()}
+{\item[int esl\_hxp\_FitCompleteBinned(ESL\_HISTOGRAM *g, ESL\_HYPEREXP *h)]}
+
+Given a histogram \ccode{g} with binned observations, where each
+bin i holds some number of observed samples x with values from 
+lower bound l to upper bound u (that is, $l < x \leq u$),
+and given a starting guess \ccode{h} for hyperexponential parameters;
+
+Find maximum likelihood parameters \ccode{h} by conjugate gradient
+descent, starting from the initial \ccode{h} and leaving the
+optimized solution in \ccode{h}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error, and \ccode{h} is left in its
+initial state.
+
+
+\end{sreapi}
+

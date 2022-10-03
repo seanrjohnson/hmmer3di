@@ -1,0 +1,20 @@
+\begin{cchunk}
+#include "easel.h"
+#include "esl_alphabet.h"
+int main(void)
+{
+  ESL_ALPHABET *a;
+  char          dnaseq[] = "GARYTC";
+  int           L        = 6;
+  ESL_DSQ      *dsq;
+  
+  a = esl_alphabet_Create(eslDNA);
+
+  if ((dsq = malloc(sizeof(ESL_DSQ) * (L+2))) == NULL)  esl_fatal("malloc failed");
+  if (esl_abc_Digitize(a, dnaseq, dsq)       != eslOK)  esl_fatal("failed to digitize the sequence");
+
+  free(dsq);
+  esl_alphabet_Destroy(a);
+  return 0;
+}
+\end{cchunk}

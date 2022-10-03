@@ -1,0 +1,117 @@
+\begin{sreapi}
+\hypertarget{func:esl_keyhash_Create()}
+{\item[ESL\_KEYHASH * esl\_keyhash\_Create(void)]}
+
+Create a new hash table for key indexing, and returns
+a pointer to it.
+
+Throws \ccode{NULL} on allocation failure.
+
+
+
+\hypertarget{func:esl_keyhash_CreateCustom()}
+{\item[ESL\_KEYHASH * esl\_keyhash\_CreateCustom(uint32\_t hashsize, int kalloc, int salloc)]}
+
+Create a new hash table, initially allocating for
+a hash table of size \ccode{hashsize} entries, \ccode{kalloc} 
+keys, and a total key string length of \ccode{salloc}.
+\ccode{hashsize} must be a power of 2, and all allocations
+must be $\geq 0$. 
+
+The object will still expand as needed, so the reason to
+use a customized allocation is when you're trying to
+minimize memory footprint and you expect your keyhash to
+be smaller than the default (of up to 128 keys, of total
+length up to 2048).
+
+Throws \ccode{NULL} on allocation failure.
+
+
+\hypertarget{func:esl_keyhash_Clone()}
+{\item[ESL\_KEYHASH * esl\_keyhash\_Clone(const ESL\_KEYHASH *kh)]}
+
+Allocates and duplicates a keyhash \ccode{kh}. Returns a
+pointer to the duplicate.
+
+Throws \ccode{NULL} on allocation failure.
+
+
+\hypertarget{func:esl_keyhash_Get()}
+{\item[char * esl\_keyhash\_Get(const ESL\_KEYHASH *kh, int idx)]}
+
+Returns a pointer to the key name associated
+with index \ccode{idx}. The key name is a \ccode{NUL}-terminated 
+string whose memory is managed internally in
+the keyhash \ccode{kh}.
+
+
+\hypertarget{func:esl_keyhash_GetNumber()}
+{\item[int esl\_keyhash\_GetNumber(const ESL\_KEYHASH *kh)]}
+
+Returns the total number of keys currently stored in the
+keyhash \ccode{kh}.
+
+
+\hypertarget{func:esl_keyhash_Reuse()}
+{\item[int esl\_keyhash\_Reuse(ESL\_KEYHASH *kh)]}
+
+Empties keyhash \ccode{kh} so it can be reused without
+creating a new one. 
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_keyhash_Destroy()}
+{\item[void esl\_keyhash\_Destroy(ESL\_KEYHASH *kh)]}
+
+Destroys \ccode{kh}.
+
+Returns (void)
+
+
+\hypertarget{func:esl_keyhash_Dump()}
+{\item[void esl\_keyhash\_Dump(FILE *fp, const ESL\_KEYHASH *kh)]}
+
+Mainly for debugging purposes. Dump 
+some information about the hash table \ccode{kh}
+to the stream \ccode{fp}, which might be stderr
+or stdout.
+
+
+\hypertarget{func:esl_keyhash_Store()}
+{\item[int esl\_keyhash\_Store(ESL\_KEYHASH *kh, const char *key, esl\_pos\_t n, int *opt\_index)]}
+
+Store a string (or mem) \ccode{key} of length \ccode{n} in the key
+index hash table \ccode{kh}.  Associate it with a unique key
+index, counting from 0. This index maps hashed keys to
+integer-indexed C arrays, clumsily emulating hashes or
+associative arrays. Optionally returns the index through
+\ccode{opt\_index}.
+
+\ccode{key}, \ccode{n} follow the standard idiom for strings and
+unterminated buffers. If \ccode{key} is raw memory, \ccode{n} must
+be provided; if \ccode{key} is a \0-terminated string, \ccode{n}
+may be -1.
+
+Returns \ccode{eslOK} on success; stores \ccode{key} in \ccode{kh}; \ccode{opt\_index} is 
+returned, set to the next higher index value.
+Returns \ccode{eslEDUP} if \ccode{key} was already stored in the table;
+\ccode{opt\_index} is set to the existing index for \ccode{key}.
+
+Throws \ccode{eslEMEM} on allocation failure, and sets \ccode{opt\_index} to -1.
+
+
+\hypertarget{func:esl_keyhash_Lookup()}
+{\item[int esl\_keyhash\_Lookup(const ESL\_KEYHASH *kh, const char *key, esl\_pos\_t n, int *opt\_index)]}
+
+Look up string or mem \ccode{key} of length \ccode{n} in hash table \ccode{kh}.
+If \ccode{key} is found, return \ccode{eslOK}, and optionally set \ccode{*opt\_index}
+to its array index (0..nkeys-1).
+If \ccode{key} is not found, return \ccode{eslENOTFOUND}, and
+optionally set \ccode{*opt\_index} to -1.
+
+If \ccode{key} is a \0-terminated string, \ccode{n} may be -1. 
+
+
+\end{sreapi}
+

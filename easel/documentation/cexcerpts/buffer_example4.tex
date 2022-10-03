@@ -1,0 +1,40 @@
+\begin{cchunk}
+#include "easel.h"
+#include "esl_buffer.h"
+
+#include <stdio.h>
+#include <string.h>
+
+int main(void)
+{
+  char        tmpfile[32] = "esltmpXXXXXX";
+  char        s1[]        = "hello world!";
+  char        s2[]        = "... and goodbye!";
+  char        buf[256];
+  int         n;
+  FILE       *fp;
+  ESL_BUFFER *bf;
+  int         status;
+
+  esl_tmpfile_named(tmpfile, &fp);
+  n = strlen(s1)+1; fwrite(&n, sizeof(int), 1, fp); fwrite(s1, sizeof(char), n, fp);
+  n = strlen(s2)+1; fwrite(&n, sizeof(int), 1, fp); fwrite(s2, sizeof(char), n, fp);
+  fclose(fp);
+
+  status = esl_buffer_Open(tmpfile, NULL, &bf);
+  if      (status == eslENOTFOUND) esl_fatal("open failed: %s",     bf ? bf->errmsg : "(no other diagnostics available)");
+  else if (status == eslFAIL)      esl_fatal("gzip -dc failed: %s", bf ? bf->errmsg : "(no other diagnostics available)");
+  else if (status != eslOK)        esl_fatal("open failed with error code %d", status);
+  
+  esl_buffer_Read(bf, sizeof(int), &n);
+  esl_buffer_Read(bf, sizeof(char) * n, buf);
+  puts(buf);
+
+  esl_buffer_Read(bf, sizeof(int), &n);
+  esl_buffer_Read(bf, sizeof(char) * n, buf);
+  puts(buf);
+  
+  esl_buffer_Close(bf);
+  return 0;
+}
+\end{cchunk}

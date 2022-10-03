@@ -1,0 +1,43 @@
+\begin{cchunk}
+/* compile: gcc -g -Wall -I. -o example -DeslRANDOMSEQ_EXAMPLE esl_randomseq.c\
+            esl_random.c esl_sqio.c esl_sq.c easel.c -lm
+ * run:     ./example <FASTA file>
+ */
+#include "easel.h"
+#include "esl_sq.h"
+#include "esl_sqio.h"
+#include "esl_random.h"
+#include "esl_randomseq.h"
+
+int
+main(int argc, char **argv)
+{
+  char           *seqfile = argv[1];
+  int             format  = eslSQFILE_UNKNOWN;
+  ESL_SQFILE     *sqfp    = NULL;
+  ESL_SQ         *sq      = esl_sq_Create();
+  ESL_RANDOMNESS *r       = esl_randomness_Create(0);
+  int             status;
+
+  if (esl_sqfile_Open(seqfile, format, NULL, &sqfp) != eslOK) 
+    esl_fatal("Failed to open %s\n", seqfile);
+
+  while ((status = esl_sqio_Read(sqfp, sq)) == eslOK)
+  {
+    printf("[Original sequence:]\n");
+    esl_sqio_Write(stdout, sq, eslSQFILE_FASTA);
+
+    printf("[After shuffling:]\n");
+    esl_rsq_CShuffle(r, sq->seq, sq->seq); /* shuffle in place */
+    esl_sqio_Write(stdout, sq, eslSQFILE_FASTA);
+
+    esl_sq_Reuse(sq);
+  }
+  if (status != eslEOF) esl_fatal("Parse failed");
+  esl_sqfile_Close(sqfp);
+  
+  esl_sq_Destroy(sq);
+  esl_randomness_Destroy(r);
+  return 0;
+}
+\end{cchunk}

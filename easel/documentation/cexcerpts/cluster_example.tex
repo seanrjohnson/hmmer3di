@@ -1,0 +1,48 @@
+\begin{cchunk}
+/* gcc -g -Wall -o example -I. -L. -DeslCLUSTER_EXAMPLE esl_cluster.c easel.c -lm  */
+#include "esl_config.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#include "easel.h"
+#include "esl_cluster.h"
+
+static int
+my_linkage_definition(const void *v1, const void *v2, const void *param, int *ret_link)
+{
+  double a         = *((double *) v1); /* you have to cast a void ptr before you can dereference it */
+  double b         = *((double *) v2);
+  double threshold = *((double *) param);
+
+  *ret_link =  ((fabs(a-b) <= threshold) ? TRUE : FALSE);
+  return eslOK;
+}
+
+int
+main(int argc, char **argv)
+{
+  double vertex[]  = { 1.0, 2.0, 4.0, 5.0, 7.0, 8.0 };
+  int    n         = sizeof(vertex) / sizeof(double);
+  double threshold = 1.5;
+  int   *workspace;
+  int   *assignment;
+  int    C;
+  int    v;
+
+  workspace  = malloc(sizeof(int) * n * 2);
+  assignment = malloc(sizeof(int) * n);
+
+  esl_cluster_SingleLinkage(vertex, n, sizeof(double),
+			    my_linkage_definition, &threshold,
+			    workspace, assignment, &C);
+
+  printf("There are %d clusters.\n", C);
+  for (v = 0; v < n; v++) printf("vertex %d is in cluster %d\n", v, assignment[v]); 
+  
+  free(workspace);
+  free(assignment);
+  return 0;
+}
+\end{cchunk}

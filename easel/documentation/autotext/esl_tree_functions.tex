@@ -1,0 +1,336 @@
+\begin{sreapi}
+\hypertarget{func:esl_tree_Create()}
+{\item[ESL\_TREE * esl\_tree\_Create(int ntaxa)]}
+
+Allocate an empty tree structure for \ccode{ntaxa} taxa
+and return a pointer to it. \ccode{ntaxa} must be $\geq 2$.
+
+Returns pointer to the new \ccode{ESL\_TREE} object; caller frees 
+this with \ccode{esl\_tree\_Destroy()}.
+
+Throws \ccode{NULL} if allocation fails.
+
+
+\hypertarget{func:esl_tree_CreateGrowable()}
+{\item[ESL\_TREE * esl\_tree\_CreateGrowable(int nalloc)]}
+
+Allocate a growable tree structure for an initial
+allocation of \ccode{nalloc} taxa, and return a pointer to it.
+\ccode{nalloc} must be $\geq 2$.
+
+Returns pointer to a new growable \ccode{ESL\_TREE} object; caller frees 
+this with \ccode{esl\_tree\_Destroy()}.
+
+Throws \ccode{NULL} if allocation fails.
+
+
+\hypertarget{func:esl_tree_CreateFromString()}
+{\item[ESL\_TREE * esl\_tree\_CreateFromString(char *s)]}
+
+A convenience for making small test cases in the test
+suites: given the contents of a Newick file as a 
+single string \ccode{s}, convert it to an \ccode{ESL\_TREE}.
+
+Returns a pointer to the new \ccode{ESL\_TREE} on success.
+
+Throws \ccode{NULL} if it fails to obtain, open, or read the
+temporary file that it puts the string \ccode{s} in.
+
+
+\hypertarget{func:esl_tree_Grow()}
+{\item[int esl\_tree\_Grow(ESL\_TREE *T)]}
+
+Given a tree \ccode{T}, make sure it can hold one more taxon;
+reallocate internally if necessary by doubling the
+number of taxa it is currently allocated to hold.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure. In this case, 
+the data in the tree are unaffected.
+
+
+\hypertarget{func:esl_tree_SetTaxaParents()}
+{\item[int esl\_tree\_SetTaxaParents(ESL\_TREE *T)]}
+
+Constructs the \ccode{T->taxaparent[]} array in the tree
+structure \ccode{T}, by an O(N) traversal of the tree.
+Upon return, \ccode{T->taxaparent[i]} is the index
+of the internal node that taxon \ccode{i} is a child of.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on internal allocation error. In this case, the tree is 
+returned unchanged.
+
+
+
+\hypertarget{func:esl_tree_SetCladesizes()}
+{\item[int esl\_tree\_SetCladesizes(ESL\_TREE *T)]}
+
+Constructs the \ccode{T->cladesize[]} array in tree structure
+\ccode{T}. Upon successful return, \ccode{T->cladesize[i]} is the
+number of taxa contained by the clade rooted at node \ccode{i}
+in the tree. For example, \ccode{T->cladesize[0]} is $N$ by
+definition, because 0 is the root of the tree.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error; in this case, the
+original \ccode{T} is unmodified.
+
+
+\hypertarget{func:esl_tree_SetTaxonlabels()}
+{\item[int esl\_tree\_SetTaxonlabels(ESL\_TREE *T, char **names)]}
+
+Given an array of taxon names \ccode{names[0..N-1]} with the
+same order and number as the taxa in tree \ccode{T}, make a
+copy of those names in \ccode{T}. For example, \ccode{names} might
+be the sequence names in a multiple alignment,
+\ccode{msa->sqname}.
+
+If the tree already had taxon names assigned to it, they
+are replaced.
+
+As a special case, if the \ccode{names} argument is passed as
+\ccode{NULL}, then the taxon labels are set to a string
+corresponding to their internal index; that is, taxon 0
+is labeled "0". 
+
+Returns \ccode{eslOK} on success, and internal state of \ccode{T}
+(specifically, \ccode{T->taxonlabel[]}) now contains a copy
+of the taxa names.
+
+Throws \ccode{eslEMEM} on allocation failure. \ccode{T->taxonlabel[]} will be
+\ccode{NULL} (even if it was already set).
+
+
+\hypertarget{func:esl_tree_RenumberNodes()}
+{\item[int esl\_tree\_RenumberNodes(ESL\_TREE *T)]}
+
+Given a tree \ccode{T} whose internal nodes might be numbered in
+any order, with the sole requirement that node 0 is the
+root; renumber the internal nodes (if necessary) to be in Easel's
+convention of preorder traversal. No other aspect of \ccode{T} is
+altered (including its allocation size).
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+
+\hypertarget{func:esl_tree_VerifyUltrametric()}
+{\item[int esl\_tree\_VerifyUltrametric(ESL\_TREE *T)]}
+
+Verify that tree \ccode{T} is ultrametric. 
+
+Returns \ccode{eslOK} if so; \ccode{eslFAIL} if not.
+
+Throws \ccode{eslEMEM} on an allocation failure.
+
+
+\hypertarget{func:esl_tree_Validate()}
+{\item[int esl\_tree\_Validate(ESL\_TREE *T, char *errbuf)]}
+
+Validates the integrity of the data structure in \ccode{T}.
+Returns \ccode{eslOK} if the internal data in \ccode{T} are
+consistent and valid. Returns \ccode{eslFAIL} if not,
+and if a non-\ccode{NULL} message buffer \ccode{errbuf} has been
+provided by the caller, an informative message is
+left in \ccode{errbuf} describing the reason for the 
+failure.
+
+
+
+\hypertarget{func:esl_tree_Destroy()}
+{\item[void esl\_tree\_Destroy(ESL\_TREE *T)]}
+
+Frees an \ccode{ESL\_TREE} object.
+
+
+\hypertarget{func:esl_tree_WriteNewick()}
+{\item[int esl\_tree\_WriteNewick(FILE *fp, ESL\_TREE *T)]}
+
+Writes tree \ccode{T} to stream \ccode{fp} in Newick format.
+
+Certain options are set in \ccode{T} to control output style, 
+as follows.
+
+If \ccode{T->show\_unrooted} is \ccode{TRUE}, \ccode{T} is printed as an
+unrooted tree starting with a trifurcation, a la PHYLIP
+format (default=\ccode{FALSE}).
+
+If \ccode{T->show\_node\_labels} is \ccode{TRUE}, then labels are
+shown for internal nodes, if any are available
+(default=\ccode{TRUE}).
+
+If \ccode{T->show\_branchlengths} is \ccode{TRUE}, then branch
+lengths are shown, as opposed to just printing a labeled
+topology (default=\ccode{TRUE}).
+
+If \ccode{T->show\_root\_branchlength} is also \ccode{TRUE}, then a
+0.0 branchlength is shown to the root node, a la Hein's
+TreeAlign Newick format (default=\ccode{FALSE}).
+
+If \ccode{T->show\_quoted\_labels} is \ccode{TRUE}, then all labels
+are shown in Newick's quoted format, as opposed to only
+using quoted labels where necessary (default=\ccode{FALSE}).
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+\ccode{eslEWRITE} on any system write error.
+\ccode{eslEINCONCEIVABLE} on internal error.
+
+
+
+\hypertarget{func:esl_tree_ReadNewick()}
+{\item[int esl\_tree\_ReadNewick(FILE *fp, char *errbuf, ESL\_TREE **ret\_T)]}
+
+Read a Newick format tree from an open input stream \ccode{fp}.
+Return the new tree in \ccode{ret\_T}. 
+
+The new tree \ccode{T} will have the optional \ccode{T->taxonlabel} and
+\ccode{T->nodelabel} arrays allocated, containing names of all the
+taxa and nodes. Whenever no label appeared in the Newick file
+for a node or taxon, the label is set to the empty string.
+
+Caller may optionally provide an \ccode{errbuf} of at least
+\ccode{eslERRBUFSIZE} chars, to retrieve diagnostic information
+in case of a parsing problem; or \ccode{errbuf} may be passed as
+\ccode{NULL}.
+
+Returns Returns \ccode{eslOK} on success, and \ccode{ret\_T} points
+to the new tree.
+
+Returns \ccode{eslEFORMAT} on parse errors, such as premature EOF
+or bad syntax in the Newick file. In this case, \ccode{ret\_T} is
+returned NULL, and the \ccode{errbuf} (if provided> contains an
+informative error message.
+
+Throws \ccode{eslEMEM} on memory allocation errors.
+\ccode{eslEINCONCEIVABLE} may also arise in case of internal bugs.
+
+
+
+\hypertarget{func:esl_tree_Compare()}
+{\item[int esl\_tree\_Compare(ESL\_TREE *T1, ESL\_TREE *T2)]}
+
+Given two trees \ccode{T1} and \ccode{T2} for the same
+set of \ccode{N} taxa, compare the topologies of the
+two trees.
+
+The routine must be able to determine which taxa are
+equivalent in \ccode{T1} and \ccode{T2}. If \ccode{T1} and \ccode{T2} both have
+taxon labels set, then the routine compares labels.
+This is the usual case. (Therefore, the \ccode{N} labels must
+all be different, or the routine will be unable to do
+this mapping uniquely.) As a special case, if neither
+\ccode{T1} nor \ccode{T2} has taxon labels, then the indexing of
+taxa \ccode{0..N-1} is assumed to be exactly the same in the
+two trees. (And if one tree has labels and the other
+does not, an \ccode{eslEINVAL} exception is thrown.)
+
+For comparing unrooted topologies, be sure that \ccode{T1} and
+\ccode{T2} both obey the unrooted tree convention that the
+"root" is placed on the branch to taxon 0. (That is,
+\ccode{T->left[0] = 0}.)
+
+Returns \ccode{eslOK} if tree topologies are identical. \ccode{eslFAIL}
+if they aren't.           
+
+Throws \ccode{eslEMEM} on allocation error. \ccode{eslEINVAL} if the taxa in
+the trees can't be mapped uniquely and completely to
+each other (because one tree doesn't have labels and
+one does, or because the labels aren't unique, or the
+two trees have different taxa).
+
+
+\hypertarget{func:esl_tree_UPGMA()}
+{\item[int esl\_tree\_UPGMA(ESL\_DMATRIX *D, ESL\_TREE **ret\_T)]}
+
+Given distance matrix \ccode{D}, use the UPGMA algorithm
+to construct a tree \ccode{T}.
+
+Returns \ccode{eslOK} on success; the tree is returned in \ccode{ret\_T},
+and must be freed by the caller with \ccode{esl\_tree\_Destroy()}.
+
+Throws \ccode{eslEMEM} on allocation problem, and \ccode{ret\_T} is set \ccode{NULL}.
+
+
+\hypertarget{func:esl_tree_WPGMA()}
+{\item[int esl\_tree\_WPGMA(ESL\_DMATRIX *D, ESL\_TREE **ret\_T)]}
+
+Given distance matrix \ccode{D}, use the WPGMA algorithm
+to construct a tree \ccode{T}.
+
+Returns \ccode{eslOK} on success; the tree is returned in \ccode{ret\_T},
+and must be freed by the caller with \ccode{esl\_tree\_Destroy()}.
+
+Throws \ccode{eslEMEM} on allocation problem, and \ccode{ret\_T} is set \ccode{NULL}.
+
+
+\hypertarget{func:esl_tree_SingleLinkage()}
+{\item[int esl\_tree\_SingleLinkage(ESL\_DMATRIX *D, ESL\_TREE **ret\_T)]}
+
+Given distance matrix \ccode{D}, construct a single-linkage
+(minimum distances) clustering tree \ccode{T}.
+
+Returns \ccode{eslOK} on success; the tree is returned in \ccode{ret\_T},
+and must be freed by the caller with \ccode{esl\_tree\_Destroy()}.
+
+Throws \ccode{eslEMEM} on allocation problem, and \ccode{ret\_T} is set \ccode{NULL}.
+
+
+\hypertarget{func:esl_tree_CompleteLinkage()}
+{\item[int esl\_tree\_CompleteLinkage(ESL\_DMATRIX *D, ESL\_TREE **ret\_T)]}
+
+Given distance matrix \ccode{D}, construct a complete-linkage
+(maximum distances) clustering tree \ccode{T}.
+
+Returns \ccode{eslOK} on success; the tree is returned in \ccode{ret\_T},
+and must be freed by the caller with \ccode{esl\_tree\_Destroy()}.
+
+Throws \ccode{eslEMEM} on allocation problem, and \ccode{ret\_T} is set \ccode{NULL}.
+
+
+\hypertarget{func:esl_tree_Simulate()}
+{\item[int esl\_tree\_Simulate(ESL\_RANDOMNESS *r, int N, ESL\_TREE **ret\_T)]}
+
+Generate a random rooted ultrametric tree of \ccode{N} taxa,
+using the algorithm of Kuhner and Felsenstein (1994).
+
+The branch lengths are generated by choosing \ccode{N-1}
+exponentially distributed split times, with decreasing
+expectations of $\frac{1}{2},\frac{1}{3}..\frac{1}{N}$
+as the simulation proceeds from the root. Thus the
+total expected branch length on the tree is
+$\sum_{k=2}^{N} \frac{1}{k}$.
+
+Returns \ccode{eslOK} on success, and the new tree is allocated
+here and returned via \ccode{ret\_tree}; caller is 
+responsible for free'ing it.
+
+Throws \ccode{eslEMEM} on allocation failure, in which case
+the \ccode{ret\_T} is returned \ccode{NULL}.
+
+
+
+\hypertarget{func:esl_tree_ToDistanceMatrix()}
+{\item[int esl\_tree\_ToDistanceMatrix(ESL\_TREE *T, ESL\_DMATRIX **ret\_D)]}
+
+Given tree \ccode{T}, calculate a pairwise distance matrix
+and return it in \ccode{ret\_D}.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_D} points to the distance 
+matrix, which caller is responsible for free'ing with
+\ccode{esl\_dmatrix\_Destroy()}.
+
+Throws \ccode{eslEMEM} on allocation failure, in which case
+\ccode{ret\_D} is returned \ccode{NULL}.
+
+
+
+\end{sreapi}
+

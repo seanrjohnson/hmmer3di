@@ -1,0 +1,61 @@
+\begin{cchunk}
+#include "easel.h"
+#include "esl_buffer.h"
+
+#include <stdio.h>
+#include <ctype.h>
+
+int
+example_read_lineblock(ESL_BUFFER *bf, char ***ret_lines, esl_pos_t **ret_lens, esl_pos_t *ret_nlines)
+{
+  char      **lines  = NULL;
+  esl_pos_t  *lens   = NULL;
+  esl_pos_t   nlines = 0;
+  char       *p;
+  esl_pos_t   n;
+  esl_pos_t   start_offset;
+  int         status;
+
+  /* skip blank lines */
+  do {
+    start_offset = esl_buffer_GetOffset(bf);
+    if ( (status = esl_buffer_GetLine(bf, &p, &n)) != eslOK) goto ERROR; /* includes normal EOF */
+  } while (esl_memspn(p, n, " \t\r\n") == n);
+  /* now p[0..n-1] is a non-blank line, start_offset is offset of p[0], point's on start of next line after it */
+  
+  /* anchor stably at start of line block */
+  esl_buffer_SetStableAnchor(bf, start_offset);
+
+  /* set pointers to non-blank lines */
+  do {
+    ESL_REALLOC(lines, sizeof(char *)    * (nlines+1));
+    ESL_REALLOC(lens,  sizeof(esl_pos_t) * (nlines+1));
+    
+    lines[nlines] = p;   // cppcheck complains about these assignments: "possible null pointer deference";
+    lens[nlines]  = n;   // but cppcheck is wrong. ESL_REALLOC will fail if lines[] or lens[] are NULL.
+    nlines++;
+  } while ( (status = esl_buffer_GetLine(bf, &p, &n)) == eslOK && esl_memspn(p, n, " \t\r\n") < n);
+  
+  /* now p[0] is on a blank line, and point is on start of next line
+   * after it.  you might be fine with that; or you might want to push
+   * the blank line back onto the parser. If so, you need to push
+   * the line back *before* raising the anchor, because the _Set() function
+   * is allowed to relocate the buffer's internal memory.
+   */
+  esl_buffer_Set(bf, p, 0);
+  esl_buffer_RaiseAnchor(bf, start_offset);
+
+  *ret_lines  = lines;
+  *ret_lens   = lens;
+  *ret_nlines = nlines;
+  return eslOK;
+
+ ERROR:
+  if (lines) free(lines);
+  if (lens)  free(lens);
+  *ret_lines  = NULL;
+  *ret_lens   = NULL;
+  *ret_nlines = 0;
+  return status;
+}
+\end{cchunk}

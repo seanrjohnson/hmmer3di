@@ -1,0 +1,254 @@
+\begin{sreapi}
+\hypertarget{func:esl_stack_ICreate()}
+{\item[ESL\_STACK * esl\_stack\_ICreate(void)]}
+
+Creates an integer stack.
+
+Returns a pointer to the new stack.
+
+Throws \ccode{NULL} on an allocation failure.
+
+
+\hypertarget{func:esl_stack_CCreate()}
+{\item[ESL\_STACK * esl\_stack\_CCreate(void)]}
+
+Creates a character stack.
+
+Returns a pointer to the new stack.
+
+Throws \ccode{NULL} on an allocation failure.
+
+
+\hypertarget{func:esl_stack_PCreate()}
+{\item[ESL\_STACK * esl\_stack\_PCreate(void)]}
+
+Creates a pointer stack.
+
+Returns a pointer to the new stack.
+
+Throws \ccode{NULL} on an allocation failure.
+
+
+\hypertarget{func:esl_stack_Reuse()}
+{\item[int esl\_stack\_Reuse(ESL\_STACK *s)]}
+
+Empties stack \ccode{s} so it can be reused without
+creating a new one. The stack \ccode{s}
+can be of any data type; it retains its original
+type.
+
+Returns \ccode{eslOK}
+
+
+\hypertarget{func:esl_stack_Destroy()}
+{\item[void esl\_stack\_Destroy(ESL\_STACK *s)]}
+
+Destroys a created stack \ccode{s}, of any data type.
+
+
+\hypertarget{func:esl_stack_IPush()}
+{\item[int esl\_stack\_IPush(ESL\_STACK *ns, int x)]}
+
+Push an integer \ccode{x} onto an integer stack \ccode{ns}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on reallocation failure.
+\ccode{eslESYS} if a pthread call fails. In this case, the
+state of a pthread mutex and/or cond may be wedged.             
+
+
+\hypertarget{func:esl_stack_CPush()}
+{\item[int esl\_stack\_CPush(ESL\_STACK *cs, char c)]}
+
+Push a character \ccode{c} onto a character stack \ccode{cs}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on reallocation failure.
+\ccode{eslESYS} if a pthread call fails. In this case, the
+state of a pthread mutex and/or cond may be wedged.             
+
+
+\hypertarget{func:esl_stack_PPush()}
+{\item[int esl\_stack\_PPush(ESL\_STACK *ps, void *p)]}
+
+Push a pointer \ccode{p} onto a pointer stack \ccode{ps}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on reallocation failure.
+\ccode{eslESYS} if a pthread call fails. In this case, the
+state of a pthread mutex and/or cond may be wedged.             
+
+
+\hypertarget{func:esl_stack_IPop()}
+{\item[int esl\_stack\_IPop(ESL\_STACK *ns, int *ret\_x)]}
+
+Pops an integer off the integer stack \ccode{ns}, and returns
+it through \ccode{ret\_x}.
+
+Returns \ccode{eslOK} on success.
+\ccode{eslEOD} if stack is empty.
+
+Throws \ccode{eslESYS} if a pthread mutex lock/unlock or conditional wait fails.
+
+
+\hypertarget{func:esl_stack_CPop()}
+{\item[int esl\_stack\_CPop(ESL\_STACK *cs, char *ret\_c)]}
+
+Pops a character off the character stack \ccode{cs}, and returns
+it through \ccode{ret\_c}.
+
+Returns \ccode{eslOK} on success. 
+\ccode{eslEOD} if stack is empty.
+
+Throws \ccode{eslESYS} if a pthread mutex lock/unlock or conditional wait fails.
+
+
+\hypertarget{func:esl_stack_PPop()}
+{\item[int esl\_stack\_PPop(ESL\_STACK *ps, void **ret\_p)]}
+
+Pops a pointer off the pointer stack \ccode{ps}, and returns
+it through \ccode{ret\_p}.
+
+Returns \ccode{eslOK} on success. 
+\ccode{eslEOD} if stack is empty.
+
+Throws \ccode{eslESYS} if a pthread mutex lock/unlock or conditional wait fails.
+
+
+\hypertarget{func:esl_stack_ObjectCount()}
+{\item[int esl\_stack\_ObjectCount(ESL\_STACK *s)]}
+
+Returns the number of data objects stored in the
+stack \ccode{s}. The stack may be of any datatype.
+
+
+\hypertarget{func:esl_stack_Convert2String()}
+{\item[char * esl\_stack\_Convert2String(ESL\_STACK *cs)]}
+
+Converts a character stack \ccode{cs} to a NUL-terminated
+string, and returns a pointer to the string. The
+characters in the string are in the same order they
+were pushed onto the stack.  The stack is destroyed by
+this operation, as if \ccode{esl\_stack\_Destroy()} had been
+called on it. The caller becomes responsible for
+free'ing the returned string.
+
+Because the stack is destroyed by this call, use care in
+a multithreaded context. You don't want to have another
+thread waiting to do something to this stack as another
+thread is destroying it. Treat this call like
+you'd treat \ccode{esl\_stack\_Destroy()}. Its internals are
+not mutex-protected (unlike push/pop functions).
+
+Returns Pointer to the string; caller must \ccode{free()} this.
+
+Throws NULL if a reallocation fails.
+
+
+\hypertarget{func:esl_stack_DiscardTopN()}
+{\item[int esl\_stack\_DiscardTopN(ESL\_STACK *s, int n)]}
+
+Throw away the top \ccode{n} elements on stack \ccode{s}.
+Equivalent to \ccode{n} calls to a \ccode{Pop()} function.
+If \ccode{n} equals or exceeds the number of elements 
+currently in the stack, the stack is emptied
+as if \ccode{esl\_stack\_Reuse()} had been called.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslESYS} if mutex lock/unlock fails, if pthreaded.
+
+
+\hypertarget{func:esl_stack_DiscardSelected()}
+{\item[int esl\_stack\_DiscardSelected(ESL\_STACK *s, int (*discard\_func)(void *, void *), void *param)]}
+
+For each element in the stack, call \verb+(*discard_func)(&element, param)+.
+If \ccode{TRUE}, discard the element. 
+
+Passing a pointer to an arbitrary \ccode{(*discard\_func)}
+allows arbitrary rules. The \ccode{(*discard\_func)} gets two
+arguments: a pointer (which is either a pointer to an
+element for int and char stacks, or an actual pointer
+element from a pointer stack), and \ccode{param}, a \ccode{void *}
+to whatever arguments the caller needs the selection
+function to have.
+
+When discarding elements from a pointer stack, the
+\ccode{*discard\_func()} will generally assume responsibility
+for the memory allocated to those elements. It may want
+to free() or Destroy() them, for example, if they're
+truly being discarded.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslESYS} if a pthread mutex lock/unlock fails.
+
+
+\hypertarget{func:esl_stack_Shuffle()}
+{\item[int esl\_stack\_Shuffle(ESL\_RANDOMNESS *r, ESL\_STACK *s)]}
+
+Randomly shuffle the elements in stack \ccode{s}, using
+random numbers from generator \ccode{r}.
+
+Returns \ccode{eslOK} on success, and the stack is randomly 
+shuffled.
+
+
+\hypertarget{func:esl_stack_UseMutex()}
+{\item[int esl\_stack\_UseMutex(ESL\_STACK *s)]}
+
+Declare that this stack is going to be operated on by more
+than one thread in a multithreaded program, and that all
+operations that change its internal state (such as
+pushing and popping) need to be protected by a mutex.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+\ccode{eslESYS} if \ccode{pthread\_mutex\_init()} fails.
+
+
+\hypertarget{func:esl_stack_UseCond()}
+{\item[int esl\_stack\_UseCond(ESL\_STACK *s)]}
+
+Declare that this stack is to be used for communication
+between threads. If a thread tries to pop from the stack
+and the stack is empty, the Pop will do a \ccode{pthread\_cond\_wait()}
+to wait until another thread has done a \ccode{Push()}. If a thread
+pushes onto the stack, it will do a \ccode{pthread\_cond\_signal()}
+to wake up a waiting \ccode{Pop()}'er.
+
+The stack must also have an active mutex. The caller
+must call \ccode{esl\_stack\_UseMutex()} before calling
+\ccode{esl\_stack\_UseCond().}
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure.
+\ccode{eslEINVAL} if this stack lacks an active mutex.
+\ccode{eslESYS} if \ccode{pthread\_cond\_init()} fails.
+
+
+\hypertarget{func:esl_stack_ReleaseCond()}
+{\item[int esl\_stack\_ReleaseCond(ESL\_STACK *s)]}
+
+Release the conditional wait state on stack \ccode{s}. In our
+idiom for using a stack to coordinate between one or
+more client thread adding jobs to a stack, and one or
+more worker threads popping them off, we call
+\ccode{esl\_stack\_ReleaseCond()} when we know the client(s) are
+done. Then the worker(s) seeing an empty job stack may
+complete (Pop functions will return eslEOD), rather than
+doing a conditional wait waiting for more work to appear
+on the stack.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslESYS} on pthread call failures.
+
+
+\end{sreapi}
+

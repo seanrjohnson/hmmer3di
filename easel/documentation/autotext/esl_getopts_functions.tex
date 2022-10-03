@@ -1,0 +1,428 @@
+\begin{sreapi}
+\hypertarget{func:esl_getopts_Create()}
+{\item[ESL\_GETOPTS * esl\_getopts\_Create(const ESL\_OPTIONS *opt)]}
+
+Creates an \ccode{ESL\_GETOPTS} object, given the
+array of valid options \ccode{opt} (NULL-element-terminated).
+Sets default values for all config 
+options (as defined in \ccode{opt}).
+
+Returns ptr to the new \ccode{ESL\_GETOPTS} object.
+
+Throws NULL on failure, including allocation failures or
+an invalid \ccode{ESL\_OPTIONS} structure.
+
+
+\hypertarget{func:esl_getopts_CreateDefaultApp()}
+{\item[ESL\_GETOPTS * esl\_getopts\_CreateDefaultApp(const ESL\_OPTIONS *options, int nargs, int argc, char **argv, char *banner, char *usage)]}
+
+Carry out the usual sequence of events in initializing a
+small Easel-based application: parses the command line,
+process the \ccode{-h} option to produce a (single-sectioned)
+help page, and check that the number of command line
+options is right.
+
+\ccode{options} is an array of \ccode{ESL\_OPTIONS} structures describing
+the options, terminated by an all-\ccode{NULL} structure.
+
+\ccode{nargs} is the number of commandline arguments
+expected. If the number of commandline arguments isn't
+equal to this, an error message is printed, with the
+\ccode{usage} string, and \ccode{exit()} is called. If \ccode{nargs} is
+-1, this check isn't done; if your program deliberately
+has a variable number of commandline arguments (i.e.
+if the number is unknown at compile time), pass -1
+for \ccode{nargs}.
+
+\ccode{argc} and \ccode{argv} are the command line
+arguments (number and pointer array) from \ccode{main()}.
+
+\ccode{banner} is an optional one-line description of the
+program's function, such as \ccode{"compare RNA structures"}.
+When the \ccode{-h} help option is selected, this description
+will be combined with the program's name (the tail of
+\ccode{argv[0]}) and Easel's copyright and license information
+to give a header like:
+
+\begin{cchunk}
+# esl-compstruct :: compare RNA structures
+# Easel 0.1 (February 2005)
+# Copyright (C) 2004-2007 HHMI Janelia Farm Research Campus
+# Freely licensed under the Janelia Software License.
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+\end{cchunk}
+
+\ccode{usage} is an optional one-line description of command
+line usage (without the command name), such as
+\begin{cchunk}
+[options] \ccode{trusted file} \ccode{test file}
+\end{cchunk}
+On errors, or
+on the help page, this usage string is combined with 
+the program's name to give a usage line like:
+
+\begin{cchunk}
+Usage: esl-compstruct [options] \ccode{trusted file} \ccode{test file}
+\end{cchunk}  
+
+\ccode{banner} and \ccode{usage} are optional, meaning that either
+can be provided as \ccode{NULL} and they won't be shown.
+
+Returns a pointer to a new \ccode{ESL\_GETOPTS} object, which contains
+all the option settings and command line arguments.
+
+On command line errors, this routine exits with abnormal
+(1) status.
+
+If the \ccode{-h} help option is seen, this routine exits with
+normal (0) status after printing a help page.
+
+
+
+\hypertarget{func:esl_getopts_Reuse()}
+{\item[int esl\_getopts\_Reuse(ESL\_GETOPTS *g)]}
+
+Reset application configuration \ccode{g} to initial defaults,
+as if it were newly created (before any 
+processing of environment, config files, or
+command line). 
+
+Returns \ccode{eslOK} on success.
+
+Throws (no abnormal error conditions)
+
+
+
+\hypertarget{func:esl_getopts_Destroy()}
+{\item[void esl\_getopts\_Destroy(ESL\_GETOPTS *g)]}
+
+Free's a created \ccode{ESL\_GETOPTS} object.
+
+Returns void.
+
+
+\hypertarget{func:esl_getopts_Dump()}
+{\item[void esl\_getopts\_Dump(FILE *ofp, ESL\_GETOPTS *g)]}
+
+Dump the state of \ccode{g} to an output stream
+\ccode{ofp}, often stdout or stderr.
+
+
+\hypertarget{func:esl_opt_ProcessConfigfile()}
+{\item[int esl\_opt\_ProcessConfigfile(ESL\_GETOPTS *g, char *filename, FILE *fp)]}
+
+Given an open configuration file \ccode{fp} (and
+its name \ccode{filename}, for error reporting),
+parse it and set options in \ccode{g} accordingly.
+Anything following a \ccode{\#} in the file is a
+comment. Blank (or all-comment) lines are
+ignored. Data lines contain one option and
+its optional argument: for example \ccode{--foo arg}
+or \ccode{-a}. All option arguments are type and
+range checked, as specified in \ccode{g}.
+
+Returns \ccode{eslOK} on success.  
+
+Returns \ccode{eslESYNTAX} on parse or format error in the
+file, or f option argument fails a type or range check,
+or if an option is set twice by the same config file.
+In any of these "normal" (user) error cases, \ccode{g->errbuf}
+is set to a useful error message to indicate the error.
+
+Throws \ccode{eslEMEM} on allocation problem.            
+
+
+\hypertarget{func:esl_opt_ProcessEnvironment()}
+{\item[int esl\_opt\_ProcessEnvironment(ESL\_GETOPTS *g)]}
+
+For any option defined in \ccode{g} that can be modified
+by an environment variable, check the environment
+and set that option accordingly. The value provided
+by the environment is type and range checked.
+When an option is turned on that has other options 
+toggle-tied to it, those options are turned off.
+An option's state may only be changed once by the
+environment (even indirectly thru toggle-tying);
+else an error is generated.
+
+Returns \ccode{eslOK} on success, and \ccode{g} is loaded with all
+options specified in the environment.
+
+Returns \ccode{eslEINVAL} on user input problems, 
+including type/range check failures, and 
+sets \ccode{g->errbuf} to a useful error message.
+
+Throws \ccode{eslEMEM} on allocation problem.            
+
+
+\hypertarget{func:esl_opt_ProcessCmdline()}
+{\item[int esl\_opt\_ProcessCmdline(ESL\_GETOPTS *g, int argc, char **argv)]}
+
+Process a command line (\ccode{argc} and \ccode{argv}), parsing out
+and setting application options in \ccode{g}. Option arguments
+are type and range checked before they are set, if type
+and range information was set when \ccode{g} was created.
+When an option is set, if it has any other options
+"toggle-tied" to it, those options are also turned off.
+
+Any given option can only change state (on/off) once
+per command line; trying to set the same option more than
+once generates an error.
+
+On successful return, \ccode{g} contains settings of all
+command line options and their option arguments, for
+subsequent retrieval by \ccode{esl\_opt\_Get*()}
+functions.  \ccode{g} also contains an \ccode{optind} state variable
+pointing to the next \ccode{argv[]} element that is not an
+option. \ccode{esl\_opt\_GetArg()} needs this to know
+where the options end and command line arguments begin
+in \ccode{argv[0]}.
+
+The parser starts with \ccode{argv[1]} and reads \ccode{argv[]} elements
+in order until it reaches an element that is not an option; 
+at this point, all subsequent \ccode{argv[]} elements are 
+interpreted as arguments to the application.
+
+Any \ccode{argv[]} element encountered in the command line that
+starts with \ccode{- } is an option, except \ccode{- } or \ccode{-- } by
+themselves. \ccode{- } by itself is interpreted as a command
+line argument (usually meaning ``read from stdin instead
+of a filename''). \ccode{-- } by itself is interpreted as
+``end of options''; all subsequent \ccode{argv[]} elements are
+interpreted as command-line arguments even if they
+begin with \ccode{- }. 
+
+Returns \ccode{eslOK} on success. \ccode{g} is loaded with
+all option settings specified on the cmdline.
+Returns \ccode{eslEINVAL} on any cmdline parsing problem,
+including option argument type/range check failures,
+and sets \ccode{g->errbuf} to a useful error message for
+the user.
+
+Throws \ccode{eslEMEM} on allocation problem.           
+
+
+\hypertarget{func:esl_opt_ProcessSpoof()}
+{\item[int esl\_opt\_ProcessSpoof(ESL\_GETOPTS *g, const char *cmdline)]}
+
+Process the string \ccode{cmdline} as if it were a 
+complete command line. 
+
+Essentially the same as \ccode{esl\_opt\_ProcessCmdline()}
+except that whitespace-delimited tokens first need to be
+identified in the \ccode{cmdline} first, then passed as
+\ccode{argc},\ccode{argv} to \ccode{esl\_opt\_ProcessCmdline()}.
+
+Returns \ccode{eslOK} on success, and \ccode{g} is loaded with the
+application configuration.
+
+Returns \ccode{eslEINVAL} on any parsing problem, and sets
+\ccode{g->errbuf} to an informative error message.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+
+\hypertarget{func:esl_opt_VerifyConfig()}
+{\item[int esl\_opt\_VerifyConfig(ESL\_GETOPTS *g)]}
+
+Given a \ccode{g} that we think is fully configured now --
+from config file(s), environment, and command line --
+verify that the configuration is self-consistent:
+for every option that is set, make sure that any
+required options are also set, and that no
+incompatible options are set. ``Set'' means
+the configured value is non-default and non-NULL (including booleans),
+and ``not set'' means the value is default or NULL. (That is,
+we don't go solely by \ccode{setby}, which refers to who
+determined the state of an option, even if
+it is turned off.)
+
+Returns \ccode{eslOK} on success.
+\ccode{eslESYNTAX} if a required option is not set, or
+if an incompatible option is set; in this case, sets 
+\ccode{g->errbuf} to contain a useful error message for
+the user.
+
+Throws \ccode{eslEINVAL} if something's wrong with the \ccode{ESL\_OPTIONS}
+structure itself -- a coding error in the application.           
+
+
+\hypertarget{func:esl_opt_ArgNumber()}
+{\item[int esl\_opt\_ArgNumber(const ESL\_GETOPTS *g)]}
+
+Returns the number of command line arguments.
+
+Caller must have already called
+\ccode{esl\_opt\_ProcessCmdline()}, in order for all the options
+to be parsed first.  Everything left on the command line
+is taken to be an argument.
+
+
+\hypertarget{func:esl_opt_SpoofCmdline()}
+{\item[int esl\_opt\_SpoofCmdline(const ESL\_GETOPTS *g, char **ret\_cmdline)]}
+
+Given the current configuration state of the application
+\ccode{g}, create a command line that would recreate the same
+state by itself (without any environment or config file
+settings), and return it in \ccode{*ret\_cmdline}.
+
+Returns \ccode{eslOK} on success. The \ccode{*ret\_cmdline} is allocated here,
+and caller is responsible for freeing it.
+
+Throws \ccode{eslEMEM} on allocation error, and \ccode{*ret\_cmdline} is \ccode{NULL}.
+
+
+
+\hypertarget{func:esl_opt_IsDefault()}
+{\item[int esl\_opt\_IsDefault(const ESL\_GETOPTS *g, char *optname)]}
+
+Returns \ccode{TRUE} if option \ccode{optname} is in its
+default state; returns \ccode{FALSE} if \ccode{optname} was 
+changed on the command line, in the environment, or in 
+a configuration file.
+
+
+\hypertarget{func:esl_opt_IsOn()}
+{\item[int esl\_opt\_IsOn(const ESL\_GETOPTS *g, char *optname)]}
+
+Returns \ccode{TRUE} if option is on (set to a non-\ccode{NULL}
+value). 
+
+This is most useful when using integer-, real-, char-,
+or string-valued options also as boolean switches, where
+they can either be OFF, or they can be turned ON by
+having a value. Caller can test \ccode{esl\_opt\_IsOn()} to see
+if the option's active at all, then use
+\ccode{esl\_opt\_GetString()} or whatever to extract the option
+value.
+
+For a boolean option, the result is identical to
+\ccode{esl\_opt\_GetBoolean()}.
+
+
+
+\hypertarget{func:esl_opt_IsUsed()}
+{\item[int esl\_opt\_IsUsed(const ESL\_GETOPTS *g, char *optname)]}
+
+Returns \ccode{TRUE} if option \ccode{optname} is in use: it has been
+set to a non-default value, and that value correspond to
+the option being "on" (a non-\ccode{NULL} value).
+
+This is used in printing application headers, where
+we want to report all the options that are in effect that
+weren't already on by default.
+
+
+
+\hypertarget{func:esl_opt_GetSetter()}
+{\item[int esl\_opt\_GetSetter(const ESL\_GETOPTS *g, char *optname)]}
+
+For a processed options object \ccode{g}, return the code
+for who set option \ccode{optname}. This code is \ccode{eslARG\_SETBY\_DEFAULT},
+\ccode{eslARG\_SETBY\_CMDLINE}, \ccode{eslARG\_SETBY\_ENV}, or it
+is $\geq$ \ccode{eslARG\_SETBY\_CFGFILE}. If the option 
+was configured by a config file, the file number (the order
+of \ccode{esl\_opt\_ProcessConfigFile()} calls) is encoded in codes
+$\geq <eslARG_SETBY_CFGFILE>$ as
+file number $=$ \ccode{code} - \ccode{eslARG\_SETBY\_CFGFILE} + 1.
+
+
+\hypertarget{func:esl_opt_GetBoolean()}
+{\item[int esl\_opt\_GetBoolean(const ESL\_GETOPTS *g, char *optname)]}
+
+Retrieves the configured TRUE/FALSE value for option \ccode{optname}
+from \ccode{g}.
+
+
+\hypertarget{func:esl_opt_GetInteger()}
+{\item[int esl\_opt\_GetInteger(const ESL\_GETOPTS *g, char *optname)]}
+
+Retrieves the configured value for option \ccode{optname}
+from \ccode{g}.
+
+
+\hypertarget{func:esl_opt_GetReal()}
+{\item[double esl\_opt\_GetReal(const ESL\_GETOPTS *g, char *optname)]}
+
+Retrieves the configured value for option \ccode{optname}
+from \ccode{g}.
+
+
+\hypertarget{func:esl_opt_GetChar()}
+{\item[char esl\_opt\_GetChar(const ESL\_GETOPTS *g, char *optname)]}
+
+Retrieves the configured value for option \ccode{optname}
+from \ccode{g}.
+
+
+\hypertarget{func:esl_opt_GetString()}
+{\item[char * esl\_opt\_GetString(const ESL\_GETOPTS *g, char *optname)]}
+
+Retrieves the configured value for option \ccode{optname}
+from \ccode{g}.
+
+This retrieves options of type \ccode{eslARG\_STRING},
+obviously, but also options of type \ccode{eslARG\_INFILE}
+and \ccode{eslARG\_OUTFILE}.
+
+
+\hypertarget{func:esl_opt_GetArg()}
+{\item[char * esl\_opt\_GetArg(const ESL\_GETOPTS *g, int which)]}
+
+Returns a pointer to command line argument number
+\ccode{which}, where \ccode{which} ranges from \ccode{1..n} for \ccode{n}
+total arguments.
+
+If the caller has already verified that \ccode{n} arguments
+exist by testing \ccode{esl\_opt\_ArgNumber(g) == n},
+\ccode{esl\_opt\_GetArg()} is guaranteed to return non-\ccode{NULL}
+arguments for \ccode{which = 1..n}.
+
+Caller is responsible for verifying that the argument
+makes sense for what it's supposed to be.
+
+Returns A pointer to command line argument \ccode{which} on success, or 
+\ccode{NULL} if there is no such argument.
+
+
+\hypertarget{func:esl_opt_DisplayHelp()}
+{\item[int esl\_opt\_DisplayHelp(FILE *ofp, const ESL\_GETOPTS *go, int docgroup, int indent,
+		    int textwidth)]}
+
+For each option in \ccode{go}, print one line of brief
+documentation for it, consisting of the option name
+(and argument, if any) and the help string. If space
+allows, default values for the options (if any) are
+shown in brackets. If space still allows, range restrictions 
+for the options (if any) are shown in parentheses.
+
+If \ccode{docgroup} is non-zero, help lines are only printed
+for options with the matching \ccode{go->opt[i].docgrouptag}.
+This allows the caller to group option documentation
+into multiple sections with different headers. To
+print all options in one call, pass 0 for \ccode{docgroup}.
+
+\ccode{indent} specifies how many spaces to prefix each line with.
+
+\ccode{textwidth} specifies the maximum text width for the
+line.  This would typically be 80 characters. Lines are
+not allowed to exceed this length. If a line does exceed
+this length, range restriction display is silently
+dropped (for all options). If any line still exceeds
+\ccode{textwidth}, the default value display is silently dropped,
+for all options. If any line still exceeds \ccode{textwidth}, even 
+though it now consists almost solely of the option name and 
+its help string, an \ccode{eslEINVAL} error is thrown. The
+caller should either shorten the help string(s) or 
+increase the \ccode{textwidth}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if one or more help lines are too long for
+the specified \ccode{textwidth}.
+\ccode{eslEWRITE} if a write fails.
+
+
+\end{sreapi}
+

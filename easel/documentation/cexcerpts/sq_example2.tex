@@ -1,0 +1,60 @@
+\begin{cchunk}
+#include <stdio.h>
+#include <string.h>
+#include "easel.h"
+#include "esl_alphabet.h"
+#include "esl_sq.h"
+
+int main(void)
+{
+  ESL_ALPHABET *abc;
+  ESL_SQ       *sq1, *sq2;
+  char         *name    = "seq1";
+  char         *acc     = "XX00001";
+  char         *desc    = "This is a test.";
+  char         *testseq = "GGGAAATTTCCC";
+  ESL_DSQ      *dsq     = NULL;
+  char         *ss      = "<<<......>>>";
+  int           n       = strlen(testseq);
+  int           i;
+
+  /* Creating a digital alphabet: */
+  abc = esl_alphabet_Create(eslRNA);
+
+  /* Creating a digital ESL_SQ from text info: */
+  esl_abc_CreateDsq(abc, testseq, &dsq);
+  sq1 = esl_sq_CreateDigitalFrom(abc, name, dsq, n, desc, acc, ss); 
+  free(dsq);
+  
+  /* Building up a digital ESL_SQ yourself: */
+  sq2 = esl_sq_CreateDigital(abc);
+  esl_sq_FormatName     (sq2, "seq%d", 1);
+  esl_sq_FormatAccession(sq2, "XX%05d", 1);
+  esl_sq_FormatDesc     (sq2, "This %s a test", "is");
+  esl_sq_GrowTo         (sq2, n);
+  esl_abc_Digitize(abc, testseq, sq2->dsq);
+  sq2->n = n;
+
+  /* a "digital" ss isn't so pretty, but just so you know: */
+  sq2->ss    = malloc(sizeof(char) * (n+2));
+  sq2->ss[0] = '\0';
+  strcpy(sq2->ss+1, ss); 
+
+  /* Accessing the information */
+  printf("Name:        %s\n", sq2->name);
+  printf("Accession:   %s\n", sq2->acc);
+  printf("Description: %s\n", sq2->desc);
+  printf("Sequence:    "); 
+  for (i = 1; i <= n; i++) 
+    putchar(abc->sym[sq2->dsq[i]]);
+  putchar('\n');
+  printf("Structure:   %s\n", sq2->ss+1);   /* +1, ss is 1..n like dsq */
+  printf("Residue 3:   %c\n", abc->sym[sq2->dsq[3]]);
+  printf("Structure 3: %c\n", sq2->ss[3]);  /* note 1..n coord system  */
+  
+  /* Freeing the structures */
+  esl_sq_Destroy(sq1);
+  esl_sq_Destroy(sq2);
+  return 0;
+}
+\end{cchunk}

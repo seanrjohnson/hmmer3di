@@ -1,0 +1,45 @@
+\begin{cchunk}
+#include <stdio.h>
+#include "easel.h"
+#include "esl_random.h"
+#include "esl_histogram.h"
+#include "esl_gamma.h"
+
+int
+main(int argc, char **argv)
+{
+  double mu         = -5.0;
+  double lambda     = 2.0;
+  double tau        = 0.7;
+  ESL_HISTOGRAM  *h = esl_histogram_CreateFull(mu, 100., 0.1);
+  ESL_RANDOMNESS *r = esl_randomness_Create(0);
+  int    n          = 10000;
+  double elam, etau;
+  int    i;
+  double x;
+  double *data;
+  int     ndata;
+
+  /* Take <n> gamma-distributed random samples. */
+  for (i = 0; i < n; i++)
+    {
+      x  =  esl_gam_Sample(r, mu, lambda, tau);
+      esl_histogram_Add(h, x);
+    }
+  esl_histogram_GetData(h, &data, &ndata);
+
+  /* Plot the empirical (sampled) and expected survivals */
+  esl_histogram_PlotSurvival(stdout, h);
+  esl_gam_Plot(stdout, mu, lambda, tau,
+	       &esl_gam_surv,  h->xmin, h->xmax, 0.1);
+
+  /* ML fit to complete data, and plot fitted survival curve */
+  esl_gam_FitComplete(data, ndata, mu, &elam, &etau);
+  esl_gam_Plot(stdout, mu, elam, etau,
+	       &esl_gam_surv,  h->xmin, h->xmax, 0.1);
+
+  esl_randomness_Destroy(r);
+  esl_histogram_Destroy(h);
+  return 0;
+}
+\end{cchunk}

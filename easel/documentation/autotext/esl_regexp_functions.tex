@@ -1,0 +1,187 @@
+\begin{sreapi}
+\hypertarget{func:esl_regexp_Create()}
+{\item[ESL\_REGEXP * esl\_regexp\_Create(void)]}
+
+Creates a new \ccode{ESL\_REGEXP} machine.
+
+Throws NULL on allocation failure.
+
+
+
+\hypertarget{func:esl_regexp_Destroy()}
+{\item[void esl\_regexp\_Destroy(ESL\_REGEXP *machine)]}
+
+Destroy a machine created by \ccode{esl\_regexp\_Create()}.
+
+Returns void.
+
+
+\hypertarget{func:esl_regexp_Compile()}
+{\item[int esl\_regexp\_Compile(ESL\_REGEXP *machine, const char *pattern)]}
+
+Precompile an NDFA for \ccode{pattern} and store it in 
+a \ccode{machine}, in preparation for using the same
+pattern for multiple searches.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if compilation fails.
+
+
+\hypertarget{func:esl_regexp_Match()}
+{\item[int esl\_regexp\_Match(ESL\_REGEXP *machine, const char *pattern, const char *s)]}
+
+Determine if string \ccode{s} matches the regular expression
+\ccode{pattern}, using a \ccode{machine}. Upon return, \ccode{machine}
+contains the compiled \ccode{pattern}.
+
+If \ccode{pattern} is \ccode{NULL}, use the last pattern compiled
+into the \ccode{machine}. 
+
+If there's a match, return \ccode{eslOK}, and the \ccode{machine}
+contains information about the match, which you can
+extract with \ccode{esl\_regexp\_Submatch*()} functions.
+
+If there's no match, return \ccode{eslEOD}.
+
+Returns \ccode{eslOK} if \ccode{pattern} matches \ccode{s}; \ccode{eslEOD} if it doesn't.
+
+Throws \ccode{eslEINVAL} if the \ccode{pattern} couldn't be compiled for any reason.
+\ccode{eslEINCONCEIVABLE} or \ccode{eslECORRUPT} if something
+went wrong in the search phase.
+
+(At the failure point, an error was generated with an appropriate
+code and message; an \ccode{ESL\_SYNTAX} code, for example, may have
+been generated to indicate that the \ccode{pattern} is an invalid syntax.)
+
+
+\hypertarget{func:esl_regexp_MultipleMatches()}
+{\item[int esl\_regexp\_MultipleMatches(ESL\_REGEXP *machine, char **sptr)]}
+
+Given a \ccode{machine} that contains a precompiled NDFA (see
+\ccode{esl\_regexp\_Compile()}, search it against a \ccode{string}.
+pointed to by \ccode{sptr}. When a match is found, returns
+\ccode{eslOK}, and resets \ccode{sptr} to point at the next character
+after the matched substring. (This may be 
+trailing NUL byte if the matched substring is at the
+very end of the string.)  If no match is found in the
+string, returns \ccode{eslEOD}.
+
+Because \ccode{sptr} is changed, the caller should
+initialize and use a temporary pointer into the string
+to be searched, not the caller's own pointer to the
+target string.
+
+Throws \ccode{eslEINCONCEIVABLE} or \ccode{eslECORRUPT} if something goes awry internally
+during the search.
+
+
+\hypertarget{func:esl_regexp_GetMatch()}
+{\item[int esl\_regexp\_GetMatch(ESL\_REGEXP *machine, int which, char **ret\_s, esl\_pos\_t *ret\_n)]}
+
+Given a \ccode{machine} that just got done matching a pattern
+against a target string, retrieve a pointer to and a
+length of text that matched. \ccode{which} indicates which
+submatch to retrieve; 0 means the entire match, and
+1..15 are up to 15 ()'d submatches in the pattern.
+
+Returns \ccode{eslOK} on success. Now \ccode{*ret\_s} points to the start of
+the match, and \ccode{*ret\_n} is its length.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_regexp_SubmatchDup()}
+{\item[char * esl\_regexp\_SubmatchDup(ESL\_REGEXP *machine, int elem)]}
+
+Given a \ccode{machine} that has just got done matching 
+some pattern against a target string, 
+retrieve a substring that matched the pattern
+or one of the ()'d parts of it. \ccode{elem} indicates
+which submatch to retrieve. \ccode{elem} 0 is the complete
+match;  1..15 (assuming the default \ccode{ESL\_REGEXP\_NSUB}=16)
+are up to 15 ()'d submatches in the pattern.
+
+Returns ptr to an allocated, NUL-terminated string containing
+the matched part of the string. Caller is responsible
+for free'ing this string.
+
+Throws NULL on any internal failure.
+
+
+\hypertarget{func:esl_regexp_SubmatchCopy()}
+{\item[int esl\_regexp\_SubmatchCopy(ESL\_REGEXP *machine, int elem, char *buffer, int nc)]}
+
+Given a \ccode{machine} that has just got done matching some
+pattern against a target string, copy a substring that
+matched the pattern or one of the ()'d parts of it into
+a provided \ccode{buffer} with \ccode{nc} chars of space allocated.
+\ccode{elem} indicates which submatch to retrieve. \ccode{elem} 0 is
+the complete match; 1..15 (assuming the default
+\ccode{ESL\_REGEXP\_NSUB}=16) are up to 15 ()'d submatches in
+the pattern.
+
+Returns \ccode{eslOK} on success, and buffer contains the NUL-terminated
+substring. 
+
+Throws \ccode{eslEINVAL} on any of several possible internal failures,
+including the \ccode{buffer} being too small to contain the 
+substring.
+
+
+\hypertarget{func:esl_regexp_SubmatchCoords()}
+{\item[int esl\_regexp\_SubmatchCoords(ESL\_REGEXP *machine, char *origin, int elem, 
+			  int *ret\_start, int *ret\_end)]}
+
+Given a \ccode{machine} that has just got done matching some
+pattern against a target string, find the start/end
+coordinates of the substring that matched the
+pattern or one of the ()'d parts of it, relative to
+a pointer \ccode{origin} on the target string. Return the result
+through the ptrs \ccode{ret\_start} and \ccode{ret\_end}.  \ccode{elem}
+indicates which submatch to retrieve. \ccode{elem} 0 is the
+complete match; 1..15 (assuming the default
+\ccode{ESL\_REGEXP\_NSUB} = 16) are up to 15 ()'d submatches in
+the pattern.
+
+The coordinates given in zero-offset convention relative
+to an \ccode{origin}. \ccode{origin} will usually be a pointer to
+the complete target string, in which case the coords
+would be [0..L-1]. However, one can extract coords
+relative to any other \ccode{origin} in the target string,
+even including an \ccode{origin} downstream of the match, so
+relative coords can be negative, ranging from -(L-1) to
+(L-1).
+
+Coords will be correct even if the match was
+found by a \ccode{esl\_regexp\_MultipleMatches()} call against
+a temp pointer into the target string.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_start} and \ccode{ret\_end}
+are set to the start/end coordinates of the submatch.
+
+Throws \ccode{eslEINVAL} on internal failures.
+The function is incapable of detecting a case in
+where \ccode{origin} is not in the same string that the
+\ccode{machine} matched like it should be. If a caller does
+this, the function may appear to succeed, but start and end  
+coords will be garbage.
+
+
+\hypertarget{func:esl_regexp_ParseCoordString()}
+{\item[int esl\_regexp\_ParseCoordString(const char *cstring, int64\_t *ret\_start, int64\_t *ret\_end)]}
+
+Given a string \ccode{cstring} of the format required for a
+range (\ccode{from}..\ccode{to}, e.g. 10..23  or 39-91) parse out
+the start and end, and return them within the variables
+\ccode{ret\_start} and \ccode{ret\_end}.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_start} and \ccode{ret\_end}
+are set to the start/end coordinates of the parse.
+
+Throws \ccode{eslESYNTAX} if a regexp match is not made, and
+\ccode{eslFAIL} if the start or end values are not parsed.
+
+
+\end{sreapi}
+

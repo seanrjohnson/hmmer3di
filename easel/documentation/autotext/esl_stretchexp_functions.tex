@@ -1,0 +1,140 @@
+\begin{sreapi}
+\hypertarget{func:esl_sxp_pdf()}
+{\item[double esl\_sxp\_pdf(double x, double mu, double lambda, double tau)]}
+
+Calculates the probability density function for the 
+stretched exponential pdf, $P(X=x)$, given
+quantile \ccode{x}, offset \ccode{mu}, and parameters \ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_sxp_logpdf()}
+{\item[double esl\_sxp\_logpdf(double x, double mu, double lambda, double tau)]}
+
+Calculates the log probability density function for the 
+stretched exponential pdf, $\log P(X=x)$, given
+quantile \ccode{x}, offset \ccode{mu}, and parameters \ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_sxp_cdf()}
+{\item[double esl\_sxp\_cdf(double x, double mu, double lambda, double tau)]}
+
+Calculates the cumulative distribution function for the 
+stretched exponential pdf, $P(X \leq x)$, given
+quantile \ccode{x}, offset \ccode{mu}, and parameters \ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_sxp_logcdf()}
+{\item[double esl\_sxp\_logcdf(double x, double mu, double lambda, double tau)]}
+
+Calculates the log of the cumulative distribution function for the 
+stretched exponential pdf, $\log P(X \leq x)$, given
+quantile \ccode{x}, offset \ccode{mu}, and parameters \ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_sxp_surv()}
+{\item[double esl\_sxp\_surv(double x, double mu, double lambda, double tau)]}
+
+Calculates the survival function for the 
+stretched exponential pdf, $P(X > x)$, given
+quantile \ccode{x}, offset \ccode{mu}, and parameters \ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_sxp_logsurv()}
+{\item[double esl\_sxp\_logsurv(double x, double mu, double lambda, double tau)]}
+
+Calculates the log survival function for the 
+stretched exponential pdf, $\log P(X > x)$, given
+quantile \ccode{x}, offset \ccode{mu}, and parameters \ccode{lambda} and \ccode{tau}.
+
+
+\hypertarget{func:esl_sxp_invcdf()}
+{\item[double esl\_sxp\_invcdf(double p, double mu, double lambda, double tau)]}
+
+Calculates the inverse CDF for a stretched exponential
+with parameters \ccode{mu}, \ccode{lambda}, and \ccode{tau}, returning
+the quantile \ccode{x} at which the CDF is \ccode{p}.
+
+The inverse CDF of the stretched exponential has no
+analytical expression as far as I'm aware. The calculation
+here is a computationally expensive, brute force bisection
+search in \ccode{x} using the CDF function. It will suffice for
+a small number of calls (for plotting applications, for example),
+but it is not sufficient for a large number of calls.
+
+
+\hypertarget{func:esl_sxp_generic_pdf()}
+{\item[double esl\_sxp\_generic\_pdf(double x, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_sxp\_pdf()}, taking
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_sxp_generic_cdf()}
+{\item[double esl\_sxp\_generic\_cdf(double x, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_sxp\_cdf()}, taking
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_sxp_generic_surv()}
+{\item[double esl\_sxp\_generic\_surv(double x, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_sxp\_surv()}, taking
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_sxp_generic_invcdf()}
+{\item[double esl\_sxp\_generic\_invcdf(double p, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_sxp\_invcdf()}, taking
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_sxp_Plot()}
+{\item[int esl\_sxp\_Plot(FILE *fp, double mu, double lambda, double tau,
+	     double (*func)(double x, double mu, double lambda, double tau), 
+	     double xmin, double xmax, double xstep)]}
+
+Plot some stretched exponential function \ccode{func} (for instance,
+\ccode{esl\_sxp\_pdf()}) for parameters \ccode{mu}, \ccode{lambda}, and \ccode{tau}, for
+a range of quantiles x from \ccode{xmin} to \ccode{xmax} in steps of \ccode{xstep};
+output to an open stream \ccode{fp} in xmgrace XY input format.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error, such as filled disk.
+
+
+\hypertarget{func:esl_sxp_Sample()}
+{\item[double esl\_sxp\_Sample(ESL\_RANDOMNESS *r, double mu, double lambda, double tau)]}
+
+Sample a stretched exponential random variate,
+by a change of variable from a Gamma sample.
+
+
+\hypertarget{func:esl_sxp_FitComplete()}
+{\item[int esl\_sxp\_FitComplete(double *x, int n,
+		    double *ret\_mu, double *ret\_lambda, double *ret\_tau)]}
+
+Given a vector of \ccode{n} observed data samples \ccode{x[]},
+find maximum likelihood parameters by conjugate gradient 
+descent optimization.
+
+
+\hypertarget{func:esl_sxp_FitCompleteBinned()}
+{\item[int esl\_sxp\_FitCompleteBinned(ESL\_HISTOGRAM *g,
+			  double *ret\_mu, double *ret\_lambda, double *ret\_tau)]}
+
+Given a histogram \ccode{g} with binned observations, where each
+bin i holds some number of observed samples x with values from 
+lower bound l to upper bound u (that is, $l < x \leq u$);
+find maximum likelihood parameters mu, lambda, tau by conjugate
+gradient descent optimization.
+
+
+\end{sreapi}
+

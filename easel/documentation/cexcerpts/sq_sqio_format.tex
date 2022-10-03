@@ -1,0 +1,18 @@
+\begin{cchunk}
+/* Unaligned file format codes
+ * These codes are coordinated with the msa module.
+ *   - 0 is an unknown/unassigned format (eslSQFILE_UNKNOWN, eslMSAFILE_UNKNOWN)
+ *   - <=100 is reserved for sqio, for unaligned formats
+ *   - >100  is reserved for msa, for aligned formats
+ */
+#define eslSQFILE_UNKNOWN      0
+#define eslSQFILE_FASTA        1   // FASTA format
+#define eslSQFILE_EMBL         2   // EMBL DNA sequence
+#define eslSQFILE_GENBANK      3   // Genbank DNA sequence
+#define eslSQFILE_DDBJ         4   // DDBJ (currently identical to GenBank parser)
+#define eslSQFILE_UNIPROT      5   // UniProt (currently identical to EMBL parser) 
+#define eslSQFILE_NCBI         6   // NCBI blast db, v4, single file
+#define eslSQFILE_DAEMON       7   // Farrar format, hmmpgmd queries: fasta + // terminator 
+#define eslSQFILE_HMMPGMD      8   // Farrar hmmpgmd database format: fasta + # header 
+#define eslSQFILE_FMINDEX      9   // Pressed FM-index format used in HMMER
+\end{cchunk}

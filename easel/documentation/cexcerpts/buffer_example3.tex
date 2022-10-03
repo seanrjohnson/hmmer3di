@@ -1,0 +1,39 @@
+\begin{cchunk}
+#include "easel.h"
+#include "esl_buffer.h"
+
+#include <stdio.h>
+
+int main(int argc, char **argv)
+{
+  char       *filename = argv[1];
+  int         xcount    = 0;
+  int         tokcount  = 0;
+  int         linecount = 0;
+  ESL_BUFFER *bf;
+  char       *tok;
+  esl_pos_t   n,i;
+  int         status;
+
+  status = esl_buffer_Open(filename, "TESTDIR", &bf);
+  if      (status == eslENOTFOUND) esl_fatal("open failed: %s",     bf->errmsg);
+  else if (status == eslFAIL)      esl_fatal("gzip -dc failed: %s", bf->errmsg);
+  else if (status != eslOK)        esl_fatal("open failed with error code %d", status);
+  
+  while (1) 
+    {
+      status = esl_buffer_GetToken(bf, " \t", &tok, &n);
+      if      (status == eslOK)  
+	{
+	  tokcount++;  
+	  for (i = 0; i < n; i++)
+	    if (tok[i] == 'x') xcount++;
+	}
+      else if (status == eslEOL) linecount++;
+      else if (status == eslEOF) break;
+    }
+  esl_buffer_Close(bf);
+  printf("Counted %d x's in %d words on %d lines\n", xcount, tokcount, linecount);
+  return 0;
+}
+\end{cchunk}

@@ -1,0 +1,354 @@
+\begin{sreapi}
+\hypertarget{func:esl_scorematrix_Create()}
+{\item[ESL\_SCOREMATRIX * esl\_scorematrix\_Create(const ESL\_ALPHABET *abc)]}
+
+Allocates a score matrix for alphabet \ccode{abc}, initializes
+all scores to zero.
+
+Returns a pointer to the new object.
+
+Throws \ccode{NULL} on allocation failure.
+
+
+\hypertarget{func:esl_scorematrix_Copy()}
+{\item[int esl\_scorematrix\_Copy(const ESL\_SCOREMATRIX *src, ESL\_SCOREMATRIX *dest)]}
+
+Copy \ccode{src} score matrix into \ccode{dest}. Caller
+has allocated \ccode{dest} for the same alphabet as
+\ccode{src}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINCOMPAT} if \ccode{dest} isn't allocated for
+the same alphabet as \ccode{src}.
+\ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_scorematrix_Clone()}
+{\item[ESL\_SCOREMATRIX * esl\_scorematrix\_Clone(const ESL\_SCOREMATRIX *S)]}
+
+Allocates a new matrix and makes it a duplicate
+of \ccode{S}. Return a pointer to the new matrix.
+
+Throws \ccode{NULL} on allocation failure.
+
+
+\hypertarget{func:esl_scorematrix_Compare()}
+{\item[int esl\_scorematrix\_Compare(const ESL\_SCOREMATRIX *S1, const ESL\_SCOREMATRIX *S2)]}
+
+Compares two score matrices. Returns \ccode{eslOK} if they 
+are identical, \ccode{eslFAIL} if they differ. Every aspect
+of the two matrices is compared.
+
+The annotation (name, filename path) are not
+compared; we may want to compare an internally
+generated scorematrix to one read from a file.
+
+
+\hypertarget{func:esl_scorematrix_CompareCanon()}
+{\item[int esl\_scorematrix\_CompareCanon(const ESL\_SCOREMATRIX *S1, const ESL\_SCOREMATRIX *S2)]}
+
+Compares the scores of canonical residues in 
+two score matrices \ccode{S1} and \ccode{S2} for equality.
+Returns \ccode{eslOK} if they are identical, \ccode{eslFAIL} 
+if they differ. Peripheral aspects of the scoring matrices
+having to do with noncanonical residues, output
+order, and suchlike are ignored.
+
+
+\hypertarget{func:esl_scorematrix_Max()}
+{\item[int esl\_scorematrix\_Max(const ESL\_SCOREMATRIX *S)]}
+
+Returns the maximum value in score matrix \ccode{S}.
+
+
+\hypertarget{func:esl_scorematrix_Min()}
+{\item[int esl\_scorematrix\_Min(const ESL\_SCOREMATRIX *S)]}
+
+Returns the minimum value in score matrix \ccode{S}.
+
+
+\hypertarget{func:esl_scorematrix_IsSymmetric()}
+{\item[int esl\_scorematrix\_IsSymmetric(const ESL\_SCOREMATRIX *S)]}
+
+Returns \ccode{TRUE} if matrix \ccode{S} is symmetric,
+or \ccode{FALSE} if it's not.
+
+
+\hypertarget{func:esl_scorematrix_ExpectedScore()}
+{\item[int esl\_scorematrix\_ExpectedScore(ESL\_SCOREMATRIX *S, double *fi, double *fj, double *ret\_E)]}
+
+Calculates the expected score of a matrix \ccode{S},
+given background frequencies \ccode{fi} and \ccode{fj};
+return it in \ccode{*ret\_E}.
+
+The expected score is defined as
+$\sum_{ab} f_a f_b \sigma_{ab}$.
+
+The expected score is in whatever units the score matrix
+\ccode{S} is in. If you know $\lambda$, you can convert it to
+units of bits ($\log 2$) by multiplying it by $\lambda /
+\log 2$.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_scorematrix_RelEntropy()}
+{\item[int esl\_scorematrix\_RelEntropy(const ESL\_SCOREMATRIX *S, const double *fi, const double *fj, double lambda, double *ret\_D)]}
+
+Calculates the relative entropy of score matrix \ccode{S} in
+bits, given its background distributions \ccode{fi} and \ccode{fj} and
+its scale \ccode{lambda}.
+
+The relative entropy is defined as $\sum_{ab} p_{ab}
+\log_2 \frac{p_{ab}} {f_a f_b}$, the average score (in
+bits) of homologous aligned sequences. In general it is
+$\geq 0$ (and certainly so in the case when background
+frequencies $f_a$ and $f_b$ are the marginals of the
+$p_{ab}$ joint ptobabilities).
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_D} contains the relative
+entropy.
+
+Throws \ccode{eslEMEM} on allocation error. 
+\ccode{eslEINVAL} if the implied $p_{ij}$'s don't sum to one,
+probably indicating that \ccode{lambda} was not the correct
+\ccode{lambda} for \ccode{S}, \ccode{fi}, and \ccode{fj}.
+In either exception, \ccode{ret\_D} is returned as 0.0.
+
+
+\hypertarget{func:esl_scorematrix_JointToConditionalOnQuery()}
+{\item[int esl\_scorematrix\_JointToConditionalOnQuery(const ESL\_ALPHABET *abc, ESL\_DMATRIX *P)]}
+
+Given a joint probability matrix \ccode{P} that has been calculated
+by \ccode{esl\_scorematrix\_ProbifyGivenBG()} or \ccode{esl\_scorematrix\_Probify()}
+(or one that obeys the same conditions; see below), 
+convert the joint probabilities \ccode{P(a,b)} to conditional 
+probabilities \ccode{P(b | a)}, where \ccode{b} is a residue in the target,
+and \ccode{a} is a residue in the query.
+
+$P(b \mid a) = P(ab) / P(a)$, where $P(a) = \sum_b P(ab)$.
+
+The value stored in \ccode{P->mx[a][b]} is $P(b \mid a)$.
+
+All values in \ccode{P} involving the codes for gap,
+nonresidue, and missing data (codes \ccode{K},\ccode{Kp-2}, and
+\ccode{Kp-1}) are 0.0, not probabilities. Only rows/columns
+\ccode{i=0..K,K+1..Kp-3} are valid probability vectors.
+
+Returns \ccode{eslOK} on success.
+
+Throws (no abnormal error conditions)
+
+
+
+\hypertarget{func:esl_scorematrix_Destroy()}
+{\item[void esl\_scorematrix\_Destroy(ESL\_SCOREMATRIX *S)]}
+
+Frees a score matrix.
+
+
+\hypertarget{func:esl_scorematrix_Set()}
+{\item[int esl\_scorematrix\_Set(const char *name, ESL\_SCOREMATRIX *S)]}
+
+Set the allocated score matrix \ccode{S} to standard score
+matrix \ccode{name}, where \ccode{name} is the name of one of
+several matrices built-in to Easel. For example,
+\ccode{esl\_scorematrix\_Set("BLOSUM62", S)}.
+
+The alphabet for \ccode{S} (\ccode{S->abc\_r}) must be set already.
+
+Built-in amino acid score matrices in Easel include
+BLOSUM45, BLOSUM50, BLOSUM62, BLOSUM80, BLOSUM90, PAM30,
+PAM70, PAM120, and PAM240.
+
+Returns \ccode{eslOK} on success, and the scores in \ccode{S} are set.
+
+\ccode{eslENOTFOUND} if \ccode{name} is not available as a built-in matrix
+for the alphabet that's set in \ccode{S}.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_scorematrix_SetIdentity()}
+{\item[int esl\_scorematrix\_SetIdentity(ESL\_SCOREMATRIX *S)]}
+
+Sets score matrix \ccode{S} to be +1 for a match, 
+0 for a mismatch. \ccode{S} may be for any alphabet.
+
+Rarely useful in real use, but may be useful to create
+simple examples (including debugging).
+
+Returns \ccode{eslOK} on success, and the scores in \ccode{S} are set.
+
+
+\hypertarget{func:esl_scorematrix_SetFromProbs()}
+{\item[int esl\_scorematrix\_SetFromProbs(ESL\_SCOREMATRIX *S, double lambda, const ESL\_DMATRIX *P, const double *fi, const double *fj)]}
+
+Sets the scores in a new score matrix \ccode{S} from target joint
+probabilities in \ccode{P}, query background probabilities \ccode{fi}, and 
+target background probabilities \ccode{fj}, with scale factor \ccode{lambda}:
+$s_{ij} = \frac{1}{\lambda} \frac{p_{ij}}{f_i f_j}$.
+
+Size of everything must match the canonical alphabet
+size in \ccode{S}. That is, \ccode{S->abc->K} is the canonical
+alphabet size of \ccode{S}; \ccode{P} must contain $K times K$
+probabilities $P_{ij}$, and \ccode{fi},\ccode{fj} must be vectors of
+K probabilities. All probabilities must be nonzero.
+
+Returns \ccode{eslOK} on success, and \ccode{S} contains the calculated score matrix.
+
+
+\hypertarget{func:esl_scorematrix_SetWAG()}
+{\item[int esl\_scorematrix\_SetWAG(ESL\_SCOREMATRIX *S, double lambda, double t)]}
+
+Parameterize an amino acid score matrix \ccode{S} using the WAG
+rate matrix \citep{WhelanGoldman01} as the underlying
+evolutionary model, at a distance of \ccode{t}
+substitutions/site, with scale factor \ccode{lambda}.
+
+Returns \ccode{eslOK} on success, and the 20x20 residue scores in \ccode{S} are set.
+
+Throws \ccode{eslEINVAL} if \ccode{S} isn't an allocated amino acid score matrix.
+\ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_scorematrix_Read()}
+{\item[int esl\_scorematrix\_Read(ESL\_FILEPARSER *efp, const ESL\_ALPHABET *abc, ESL\_SCOREMATRIX **ret\_S)]}
+
+Given a pointer \ccode{efp} to an open file parser for a file
+containing a score matrix (such as a PAM or BLOSUM
+matrix), parse the file and create a new score matrix
+object. The scores are expected to be for the alphabet
+\ccode{abc}. 
+
+The score matrix file is in the format that BLAST or
+FASTA use. The first line is a header contains N
+single-letter codes for the residues. Each of N
+subsequent rows optionally contains a residue row label
+(in the same order as the columns), followed by N
+residue scores.  (Older matrix files do not contain the
+leading row label; newer ones do.) The residues may
+appear in any order. They must minimally include the
+canonical K residues (K=4 for DNA, K=20 for protein),
+and may also contain none, some, or all degeneracy
+codes. Any other residue code that is not in the Easel
+digital alphabet (including, in particular, the '*' code
+for a stop codon) is ignored by the parser.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_S} points to a newly allocated 
+score matrix. 
+
+Returns \ccode{eslEFORMAT} on parsing error; in which case, \ccode{ret\_S} is
+returned \ccode{NULL}, and \ccode{efp->errbuf} contains an informative
+error message.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_scorematrix_Write()}
+{\item[int esl\_scorematrix\_Write(FILE *fp, const ESL\_SCOREMATRIX *S)]}
+
+Writes a score matrix \ccode{S} to an open stream \ccode{fp}, in 
+format compatible with BLAST, FASTA, and other common
+sequence alignment software.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error, such as filled disk.
+
+
+\hypertarget{func:esl_scorematrix_ProbifyGivenBG()}
+{\item[int esl\_scorematrix\_ProbifyGivenBG(const ESL\_SCOREMATRIX *S, const double *fi, const double *fj, 
+			       double *opt\_lambda, ESL\_DMATRIX **opt\_P)]}
+
+Given a score matrix \ccode{S} and known query and target
+background frequencies \ccode{fi} and \ccode{fj} respectively, calculate scale
+\ccode{lambda} and implicit target probabilities \citep{Altschul01}. 
+Optionally returns either (or both) in \ccode{opt\_lambda} and \ccode{opt\_P}.
+
+The implicit target probabilities are returned in a
+newly allocated $Kp \times Kp$ \ccode{ESL\_DMATRIX}, over both
+the canonical (typically K=4 or K=20) residues in the
+residue alphabet, and the degenerate residue codes.
+Values involving degenerate residue codes are marginal
+probabilities (i.e. summed over the degeneracy).
+Only actual residue degeneracy can have nonzero values
+for \ccode{p\_ij}; by convention, all values involving the
+special codes for gap, nonresidue, and missing data
+(\ccode{K}, \ccode{Kp-2}, \ccode{Kp-1}) are 0.
+
+If the caller wishes to convert this joint probability
+matrix to conditionals, it can take advantage of the
+fact that the degenerate probability \ccode{P(X,j)} is our
+marginalized \ccode{pj}, and \ccode{P(i,X)} is \ccode{pi}. 
+i.e., \ccode{P(j|i) = P(i,j) / P(i) = P(i,j) / P(X,j)}.
+Those X values are \ccode{P->mx[i][esl\_abc\_GetUnknown(abc)]},
+\ccode{P->mx[esl\_abc\_GetUnknown(abc)][j]}; equivalently, just use
+code \ccode{Kp-3} for X.
+
+By convention, i is always the query sequence, and j is
+always the target. We do not assume symmetry in the
+scoring system, though that is usually the case.
+
+Returns \ccode{eslOK} on success, \ccode{*ret\_lambda} contains the
+calculated $\lambda$ parameter, and \ccode{*ret\_P} points to
+the target probability matrix (which is allocated here,
+and must be free'd by caller with \ccode{esl\_dmatrix\_Destroy(*ret\_P)}.
+
+Throws \ccode{eslEMEM} on allocation error; 
+\ccode{eslEINVAL} if matrix is invalid and has no solution for $\lambda$;
+\ccode{eslENOHALT} if the solver fails to find $\lambda$.
+In these cases, \ccode{*ret\_lambda} is 0.0, and \ccode{*ret\_P} is \ccode{NULL}. 
+
+
+\hypertarget{func:esl_scorematrix_Probify()}
+{\item[int esl\_scorematrix\_Probify(const ESL\_SCOREMATRIX *S, ESL\_DMATRIX **opt\_P, double **opt\_fi, double **opt\_fj, double *opt\_lambda)]}
+
+Reverse engineering of a score matrix: given a "valid"
+substitution matrix \ccode{S}, obtain implied joint
+probabilities $p_{ij}$, query composition $f_i$, target
+composition $f_j$, and scale $\lambda$, by assuming that
+$f_i$ and $f_j$ are the appropriate marginals of $p_{ij}$.
+Optionally return any or all of these solutions in
+\ccode{*opt\_P}, \ccode{*opt\_fi}, \ccode{*opt\_fj}, and \ccode{*opt\_lambda}.
+
+The calculation is run only on canonical residue scores
+$0..K-1$ in S, to calculate joint probabilities for all
+canonical residues. Joint and background probabilities 
+involving degenerate residues are then calculated by
+appropriate marginalizations. See notes on
+\ccode{esl\_scorematrix\_ProbifyGivenBG()} about how probabilities
+involving degeneracy codes are calculated.
+
+This implements an algorithm described in
+\citep{YuAltschul03} and \citep{YuAltschul05}.
+
+Although this procedure may succeed in many cases,
+it is unreliable and should be used with great caution.
+Yu and Altschul note that it can find invalid solutions
+(negative probabilities), and although they say that one
+can keep searching until a valid solution is found, 
+one can produce examples where this does not seem to be
+the case. The caller MUST check return status, and
+MUST expect \ccode{eslENORESULT}.
+
+Returns \ccode{eslOK} on success, and \ccode{opt\_P}, \ccode{opt\_fi}, \ccode{opt\_fj}, and \ccode{opt\_lambda}
+point to the results (for any of these that were passed non-\ccode{NULL}).
+
+\ccode{opt\_P}, \ccode{opt\_fi}, and \ccode{opt\_fj}, if requested, are new
+allocations, and must be freed by the caller.
+
+Returns \ccode{eslENORESULT} if the algorithm fails to determine a valid solution,
+but the solution is still returned (and caller needs to free).
+
+Returns \ccode{eslEINVAL} if input score matrix isn't valid (sensu YuAltschul05);
+now \ccode{opt\_P}, \ccode{opt\_fi}, \ccode{opt\_fj} are returned NULL and \ccode{opt\_lambda} is returned
+as 0.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+
+\end{sreapi}
+

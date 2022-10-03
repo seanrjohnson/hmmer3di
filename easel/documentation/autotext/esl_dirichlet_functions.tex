@@ -1,0 +1,73 @@
+\begin{sreapi}
+\hypertarget{func:esl_dirichlet_logpdf()}
+{\item[double esl\_dirichlet\_logpdf(double *p, double *alpha, int K)]}
+
+Given Dirichlet parameter vector \ccode{alpha} and a probability
+vector \ccode{p}, both of cardinality \ccode{K}; return
+$\log P(p \mid alpha)$.
+
+Returns $\log P(p \mid alpha)$.
+
+
+
+\hypertarget{func:esl_dirichlet_logpdf_c()}
+{\item[double esl\_dirichlet\_logpdf\_c(double *c, double *alpha, int K)]}
+
+Given an observed count vector $c[0..K-1]$, 
+and a simple Dirichlet density parameterized by
+$\alpha[0..K-1]$;
+return $\log P(c \mid \alpha)$.
+
+This is $\int P(c \mid p) P(p \mid \alpha) dp$,
+an integral that can be solved analytically.
+
+Returns \ccode{eslOK} on success, and puts result $\log P(c \mid \alpha)$
+in \ccode{ret\_answer}.
+
+
+\hypertarget{func:esl_dirichlet_DSample()}
+{\item[int esl\_dirichlet\_DSample(ESL\_RANDOMNESS *r, double *alpha, int K, double *p)]}
+
+Given a Dirichlet density parameterized by $\alpha[0..K-1]$,
+sample a probability vector $p[0..K-1]$ from
+$P(p \mid \alpha)$.
+
+Returns \ccode{eslOK}, and \ccode{p} will contain the sampled vector.
+
+
+\hypertarget{func:esl_dirichlet_FSample()}
+{\item[int esl\_dirichlet\_FSample(ESL\_RANDOMNESS *r, float *alpha, int K, float *p)]}
+
+Same as \ccode{esl\_dirichlet\_DSample()}, except it
+works in single-precision floats, not doubles.
+
+
+\hypertarget{func:esl_dirichlet_DSampleUniform()}
+{\item[int esl\_dirichlet\_DSampleUniform(ESL\_RANDOMNESS *r, int K, double *p)]}
+
+Sample a probability vector $p[0..K-1]$ uniformly, by
+sampling from a Dirichlet of $\alpha_i = 1.0 \forall i$.
+
+Returns \ccode{eslOK}, and \ccode{p} will contain the sampled vector.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_dirichlet_FSampleUniform()}
+{\item[int esl\_dirichlet\_FSampleUniform(ESL\_RANDOMNESS *r, int K, float *p)]}
+
+Same as \ccode{esl\_dirichlet\_DSampleUniform()}, except it
+works in single-precision floats, not doubles.
+
+
+\hypertarget{func:esl_dirichlet_SampleBeta()}
+{\item[int esl\_dirichlet\_SampleBeta(ESL\_RANDOMNESS *r, double theta1, double theta2, double *ret\_answer)]}
+
+Samples from a Beta(theta1, theta2) density, leaves answer
+in \ccode{ret\_answer}. (Special case of sampling Dirichlet.)
+
+Returns \ccode{eslOK}.           
+
+
+\end{sreapi}
+

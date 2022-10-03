@@ -1,0 +1,27 @@
+\begin{cchunk}
+int
+main(int argc, char **argv)
+{
+  char       *filename = argv[1];
+  ESL_BUFFER *bf;
+  char       *seqname, *seqdesc, *seq;
+  int         seqlen;
+  int         status;
+
+  status = esl_buffer_Open(filename, "TESTDIR", &bf);
+  if      (status == eslENOTFOUND) esl_fatal("open failed: %s",     bf ? bf->errmsg : "(no other diagnostics available)");
+  else if (status == eslFAIL)      esl_fatal("gzip -dc failed: %s", bf ? bf->errmsg : "(no other diagnostics available)");
+  else if (status != eslOK)        esl_fatal("open failed with error code %d", status);
+
+  while ( (status = example_read_fasta(bf, &seqname, &seqdesc, &seq, &seqlen)) == eslOK)
+    {
+      printf("sequence: %20s  length: %6d   description: %s\n", seqname, seqlen, seqdesc);
+      free(seqname);
+      free(seqdesc);
+      free(seq);
+    }
+  if (status != eslEOF) esl_fatal("bad FASTA format: %s", bf->errmsg);
+  esl_buffer_Close(bf);
+  return 0;
+}
+\end{cchunk}

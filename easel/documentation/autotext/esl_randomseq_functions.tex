@@ -1,0 +1,422 @@
+\begin{sreapi}
+\hypertarget{func:esl_rsq_Sample()}
+{\item[int esl\_rsq\_Sample(ESL\_RANDOMNESS *rng, int allowed\_chars, int L, char **ret\_s)]}
+
+Sample a random character string of length \ccode{L}, 
+consisting of characters in the set defined by
+an integer flag \ccode{allowed\_chars}, using 
+random number generator \ccode{rng}. 
+
+Return the new NUL-terminated string in \ccode{*ret\_s}.  This
+may either be a new allocation, or in pre-allocated
+storage provided by the caller. If caller passes
+\ccode{*ret\_s} as \ccode{NULL}, new space is allocated, and the
+caller is responsible for freeing it. That is: 
+\begin{cchunk}
+char *s  = NULL; 
+esl_rsq_Sample(..., &s); 
+free(s);
+\end{cchunk}
+
+If caller passes a non-\ccode{NULL} \ccode{*ret\_s}, it is assumed to
+be a preallocated space of at least \ccode{L+1} characters,
+and caller is (of course) responsible for freeing
+it. That is: 
+\begin{cchunk}
+char *s = malloc(L+1);
+esl_rsq_Sample(...,L, &s);
+free(s);
+\end{cchunk}
+
+Allowed values of the flag \ccode{allowed\_char\_flag} mirror
+the standard C99 character set functions in \ccode{ctype.h}:
+
+| \ccode{eslRSQ\_SAMPLE\_ALNUM}  |  isalnum()  | isalpha() or isdigit() |
+| \ccode{eslRSQ\_SAMPLE\_ALPHA}  |  isalpha()  | islower() or isupper() |
+| \ccode{eslRSQ\_SAMPLE\_LOWER}  |  islower()  | [a-z] |
+| \ccode{eslRSQ\_SAMPLE\_UPPER}  |  isupper()  | [A-Z] |
+| \ccode{eslRSQ\_SAMPLE\_DIGIT}  |  isdigit()  | [0-9] |
+| \ccode{eslRSQ\_SAMPLE\_XDIGIT} |  isxdigit() | [0-9] or [a-f] or [A-F] |
+| \ccode{eslRSQ\_SAMPLE\_CNTRL}  |  iscntrl()  | ASCII control characters |
+| \ccode{eslRSQ\_SAMPLE\_GRAPH}  |  isgraph()  | any printing char except space |
+| \ccode{eslRSQ\_SAMPLE\_SPACE}  |  isspace()  | space, and other whitespace such as tab, newline |
+| \ccode{eslRSQ\_SAMPLE\_BLANK}  |  isblank()  | space or tab |
+| \ccode{eslRSQ\_SAMPLE\_PRINT}  |  isprint()  | any printing char including space |
+| \ccode{eslRSQ\_SAMPLE\_PUNCT}  |  ispunct()  | punctuation |
+
+Note that with \ccode{eslRSQ\_SAMPLE\_CNTRL}, your string
+may sample NUL control characters (\ccode{0}), in addition to
+the string-terminating one at \ccode{(*ret\_s)[L]}, so \ccode{strlen(*ret\_s)}
+may not equal \ccode{L} in this case. 
+
+These values are exclusive: you use one and only one of
+them as \ccode{allowed\_chars}, you can't logically OR or NOT
+them together.
+
+Returns \ccode{eslOK} on success; \ccode{*ret\_s} is the sampled string, which was
+newly allocated here, and caller becomes responsible for free'ing.
+
+Throws \ccode{eslEMEM} on allocation error; \ccode{eslEINVAL} if caller 
+passes an invalid value of \ccode{allowed\_chars}. Now \ccode{*ret\_s} 
+is \ccode{NULL}.
+
+
+\hypertarget{func:esl_rsq_IID()}
+{\item[int esl\_rsq\_IID(ESL\_RANDOMNESS *r, const char *alphabet, const double *p, int K, int L, char *s)]}
+
+Generate a \ccode{NUL}-terminated i.i.d. symbol string of length \ccode{L},
+$0..L-1$, and leave it in \ccode{s}. The symbol alphabet is given
+as a string \ccode{alphabet} of \ccode{K} total symbols, and the iid
+probability of each residue is given in \ccode{p}. The caller
+must provide an \ccode{s} that is allocated for at least
+\ccode{(L+1)*sizeof(char)}, room for \ccode{L} residues and the \ccode{NUL} terminator.
+
+\ccode{esl\_rsq\_fIID()} does the same, but for a floating point
+probability vector \ccode{p}, rather than a double precision
+vector.
+
+
+
+\hypertarget{func:esl_rsq_CShuffle()}
+{\item[int esl\_rsq\_CShuffle(ESL\_RANDOMNESS *r, const char  *s, char *shuffled)]}
+
+Returns a shuffled version of \ccode{s} in \ccode{shuffled}, given
+a source of randomness \ccode{r}.
+
+Caller provides allocated storage for \ccode{shuffled}, for at
+least the same length as \ccode{s}.
+
+\ccode{shuffled} may also point to the same storage as \ccode{s},
+in which case \ccode{s} is shuffled in place.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_rsq_CShuffleDP()}
+{\item[int esl\_rsq\_CShuffleDP(ESL\_RANDOMNESS *r, const char *s, char *shuffled)]}
+
+Given string \ccode{s}, and a source of randomness \ccode{r},
+returns shuffled version in \ccode{shuffled}. The shuffle
+is a "doublet-preserving" (DP) shuffle which
+shuffles a sequence while exactly preserving both mono-
+and di-symbol composition. 
+
+\ccode{s} may only consist of alphabetic characters [a-zA-Z].
+The shuffle is done case-insensitively. The shuffled
+string result is all upper case.
+
+Caller provides storage in \ccode{shuffled} of at least the
+same length as \ccode{s}.
+
+\ccode{shuffled} may also point to the same storage as \ccode{s},
+in which case \ccode{s} is shuffled in place.
+
+The algorithm does an internal allocation of a
+substantial amount of temporary storage, on the order of
+\ccode{26 * strlen(s)}, so an allocation failure is possible
+if \ccode{s} is long enough.
+
+The algorithm is a search for a random Eulerian walk on
+a directed multigraph \citep{AltschulErickson85}.
+
+If \ccode{s} is of length 2 or less, this is a no-op, and
+\ccode{shuffled} is a copy of \ccode{s}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{s} contains nonalphabetic characters.
+\ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_rsq_CShuffleKmers()}
+{\item[int esl\_rsq\_CShuffleKmers(ESL\_RANDOMNESS *r, const char *s, int K, char *shuffled)]}
+
+Consider a text sequence \ccode{s} as a string of nonoverlapping
+k-mers of length \ccode{K}. Shuffle the k-mers, given a random
+number generator \ccode{r}. Put the shuffled sequence in
+\ccode{shuffled}.
+
+If the length of \ccode{s} is not evenly divisible by \ccode{K}, the
+remaining residues are left (unshuffled) as a prefix to
+the shuffled k-mers.
+
+For example, shuffling ABCDEFGHIJK as k=3-mers might
+result in ABFIJKFGHCDE.
+
+Caller provides allocated storage for \ccode{shuffled},
+for at least the same length as \ccode{s}. 
+
+\ccode{shuffled} may also point to the same storage as \ccode{s},
+in which case \ccode{s} is shuffled in place.
+
+There is almost no formally justifiable reason why you'd
+use this shuffle -- it's not like it preserves any
+particularly well-defined statistical properties of the
+sequence -- but it's a quick and dirty way to sort of
+maybe possibly preserve some higher-than-monomer
+statistics.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_rsq_CReverse()}
+{\item[int esl\_rsq\_CReverse(const char *s, char *rev)]}
+
+Returns a reversed version of \ccode{s} in \ccode{rev}. 
+
+There are no restrictions on the symbols that \ccode{s}
+might contain.
+
+Caller provides storage in \ccode{rev} for at least
+\ccode{(strlen(s)+1)*sizeof(char)}.
+
+\ccode{s} and \ccode{rev} can point to the same storage, in which
+case \ccode{s} is reversed in place.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_rsq_CShuffleWindows()}
+{\item[int esl\_rsq\_CShuffleWindows(ESL\_RANDOMNESS *r, const char *s, int w, char *shuffled)]}
+
+Given string \ccode{s}, shuffle residues in nonoverlapping
+windows of width \ccode{w}, and put the result in \ccode{shuffled}.
+See [Pearson88].
+
+\ccode{s} and \ccode{shuffled} can be identical to shuffle in place.
+
+Caller provides storage in \ccode{shuffled} for at least
+\ccode{(strlen(s)+1)*sizeof(char)}.
+
+
+
+\hypertarget{func:esl_rsq_CMarkov0()}
+{\item[int esl\_rsq\_CMarkov0(ESL\_RANDOMNESS *r, const char *s, char *markoved)]}
+
+Makes a random string \ccode{markoved} with the same length and
+0-th order Markov properties as \ccode{s}, given randomness
+source \ccode{r}.
+
+\ccode{s} and \ccode{markoved} can be point to the same storage, in which
+case \ccode{s} is randomized in place, destroying the original
+string.
+
+\ccode{s} must consist only of alphabetic characters [a-zA-Z].
+Statistics are collected case-insensitively over 26 possible
+residues. The random string is generated all upper case.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{s} contains nonalphabetic characters.
+
+
+\hypertarget{func:esl_rsq_CMarkov1()}
+{\item[int esl\_rsq\_CMarkov1(ESL\_RANDOMNESS *r, const char *s, char *markoved)]}
+
+Makes a random string \ccode{markoved} with the same length and
+1st order (di-residue) Markov properties as \ccode{s}, given
+randomness source \ccode{r}.
+
+\ccode{s} and \ccode{markoved} can be point to the same storage, in which
+case \ccode{s} is randomized in place, destroying the original
+string.
+
+\ccode{s} must consist only of alphabetic characters [a-zA-Z].
+Statistics are collected case-insensitively over 26 possible
+residues. The random string is generated all upper case.
+
+If \ccode{s} is of length 2 or less, this is a no-op, and
+\ccode{markoved} is a copy of \ccode{s}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{s} contains nonalphabetic characters.
+
+
+\hypertarget{func:esl_rsq_xIID()}
+{\item[int esl\_rsq\_xIID(ESL\_RANDOMNESS *r, const double *p, int K, int L, ESL\_DSQ *dsq)]}
+
+Generate an i.i.d. digital sequence of length \ccode{L} (1..L) and
+leave it in \ccode{dsq}. The i.i.d. probability of each residue is
+given in the probability vector \ccode{p}, and the number of
+possible residues (the alphabet size) is given by \ccode{K}.
+(Only the alphabet size \ccode{K} is needed here, as opposed to
+a digital \ccode{ESL\_ALPHABET}, but the caller presumably
+has a digital alphabet.) The caller must provide a \ccode{dsq}
+allocated for at least \ccode{L+2} residues of type \ccode{ESL\_DSQ},
+room for \ccode{L} residues and leading/trailing digital sentinel bytes.
+
+\ccode{esl\_rsq\_xfIID()} does the same, but for a
+single-precision float vector \ccode{p} rather than a
+double-precision vector \ccode{p}.
+
+As a special case, if \ccode{p} is \ccode{NULL}, sample residues uniformly.
+
+
+
+\hypertarget{func:esl_rsq_SampleDirty()}
+{\item[int esl\_rsq\_SampleDirty(ESL\_RANDOMNESS *rng, ESL\_ALPHABET *abc, double **byp\_p, int L, ESL\_DSQ *dsq)]}
+
+Using random number generator \ccode{rng}, use probability
+vector \ccode{p} to sample an iid digital sequence in alphabet
+\ccode{abc} of length \ccode{L}. Store it in \ccode{dsq}. 
+
+The \ccode{dsq} space, allocated by the caller, has room for
+at least \ccode{L+2} residues, counting the digital
+sentinels. 
+
+Probability vector \ccode{p} has \ccode{Kp} terms, and sums to 1.0
+over them. The probabilities in \ccode{p} for residues \ccode{K},
+\ccode{Kp-2}, and \ccode{Kp-1} (gap, nonresidue, missing) are
+typically zero, to generate a standard unaligned digital
+sequence with degenerate residues. To sample a random
+"alignment", \ccode{p[K]} is nonzero.
+
+If \ccode{p} is \ccode{NULL}, then we sample a probability vector
+according to the following rules, which generates
+*ungapped* dirtied random sequences:
+1. Sample pc, the probability of canonical
+vs. noncanonical residues, uniformly on [0,1).
+2. Sample a p[] uniformly for canonical residues
+\ccode{0..K-1}, and renormalize by multiplying by pc.
+Sample a different p[] uniformly for noncanonical
+residues \ccode{K+1..Kp-3}, and renormalize by (1-pc).
+3. p[] = 0 for gap residue K, nonresidue Kp-2, 
+missing residue Kp-1.
+This usage is mainly intended to make it easy to
+sample dirty edge cases for automated tests.
+
+Returns \ccode{eslOK} on success
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_rsq_XShuffle()}
+{\item[int esl\_rsq\_XShuffle(ESL\_RANDOMNESS *r, const ESL\_DSQ *dsq, int L, ESL\_DSQ *shuffled)]}
+
+Given a digital sequence \ccode{dsq} of length \ccode{L} residues,
+shuffle it, and leave the shuffled version in \ccode{shuffled}.
+
+Caller provides allocated storage for \ccode{shuffled} for at
+least the same length as \ccode{dsq}. 
+
+\ccode{shuffled} may also point to the same storage as \ccode{dsq},
+in which case \ccode{dsq} is shuffled in place.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_rsq_XShuffleDP()}
+{\item[int esl\_rsq\_XShuffleDP(ESL\_RANDOMNESS *r, const ESL\_DSQ *dsq, int L, int K, ESL\_DSQ *shuffled)]}
+
+Same as \ccode{esl\_rsq\_CShuffleDP()}, except for a digital
+sequence \ccode{dsq} of length \ccode{L}, encoded in a digital alphabet
+of \ccode{K} residues. 
+
+\ccode{dsq} may only consist of residue codes \ccode{0..K-1}; if it
+contains gaps, degeneracies, or missing data, pass the alphabet's
+\ccode{Kp} size, not its canonical \ccode{K}.
+
+If \ccode{L} $\leq 2$, this is a no-op; \ccode{shuffled} is a copy of \ccode{dsq}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{s} contains digital residue codes
+outside the range \ccode{0..K-1}.
+\ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_rsq_XShuffleKmers()}
+{\item[int esl\_rsq\_XShuffleKmers(ESL\_RANDOMNESS *r, const ESL\_DSQ *dsq, int L, int K, ESL\_DSQ *shuffled)]}
+
+Same as \ccode{esl\_rsq\_CShuffleKmers()}, but shuffle digital 
+sequence \ccode{dsq} of length \ccode{L} into digital result \ccode{shuffled}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_rsq_XReverse()}
+{\item[int esl\_rsq\_XReverse(const ESL\_DSQ *dsq, int L, ESL\_DSQ *rev)]}
+
+Given a digital sequence \ccode{dsq} of length \ccode{L}, return
+reversed version of it in \ccode{rev}. 
+
+Caller provides storage in \ccode{rev} for at least
+\ccode{(L+2)*sizeof(ESL\_DSQ)}.
+
+\ccode{s} and \ccode{rev} can point to the same storage, in which
+case \ccode{s} is reversed in place.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_rsq_XShuffleWindows()}
+{\item[int esl\_rsq\_XShuffleWindows(ESL\_RANDOMNESS *r, const ESL\_DSQ *dsq, int L, int w, ESL\_DSQ *shuffled)]}
+
+Given a digital sequence \ccode{dsq} of length \ccode{L}, shuffle
+residues in nonoverlapping windows of width \ccode{w}, and put
+the result in \ccode{shuffled}.  See [Pearson88].
+
+Caller provides storage in \ccode{shuffled} for at least
+\ccode{(L+2)*sizeof(ESL\_DSQ)}.
+
+\ccode{dsq} and \ccode{shuffled} can be identical to shuffle in place.
+
+
+
+\hypertarget{func:esl_rsq_XMarkov0()}
+{\item[int esl\_rsq\_XMarkov0(ESL\_RANDOMNESS *r, const ESL\_DSQ *dsq, int L, int K, ESL\_DSQ *markoved)]}
+
+Same as \ccode{esl\_rsq\_CMarkov0()}, except for a digital
+sequence \ccode{dsq} of length \ccode{L}, encoded in a digital 
+alphabet of \ccode{K} residues; caller provides storage
+for the randomized sequence \ccode{markoved} for at least 
+\ccode{L+2} \ccode{ESL\_DSQ} residues, including the two flanking
+sentinel bytes.
+
+\ccode{dsq} therefore may only consist of residue codes
+in the range \ccode{0..K-1}. If it contains gaps,
+degeneracies, or missing data, pass the alphabet's
+\ccode{Kp} size, not its canonical \ccode{K}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{s} contains digital residue codes outside
+the range \ccode{0..K-1}.
+\ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_rsq_XMarkov1()}
+{\item[int esl\_rsq\_XMarkov1(ESL\_RANDOMNESS *r, const ESL\_DSQ *dsq, int L, int K, ESL\_DSQ *markoved)]}
+
+Same as \ccode{esl\_rsq\_CMarkov1()}, except for a digital
+sequence \ccode{dsq} of length \ccode{L}, encoded in a digital 
+alphabet of \ccode{K} residues. Caller provides storage
+for the randomized sequence \ccode{markoved} for at least 
+\ccode{L+2} \ccode{ESL\_DSQ} residues, including the two flanking
+sentinel bytes.
+
+\ccode{dsq} and \ccode{markoved} can be point to the same storage, in which
+case \ccode{dsq} is randomized in place, destroying the original
+string.
+
+\ccode{dsq} therefore may only consist of residue codes
+in the range \ccode{0..K-1}. If it contains gaps,
+degeneracies, or missing data, pass the alphabet's
+\ccode{Kp} size, not its canonical \ccode{K}.
+
+If \ccode{L} $\leq 2$, this is a no-op; \ccode{markoved} is a copy of \ccode{dsq}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{s} contains digital residue codes outside
+the range \ccode{0..K-1}.
+\ccode{eslEMEM} on allocation failure.
+
+
+\end{sreapi}
+

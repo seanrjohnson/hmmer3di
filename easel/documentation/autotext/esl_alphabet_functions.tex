@@ -1,0 +1,631 @@
+\begin{sreapi}
+\hypertarget{func:esl_alphabet_Create()}
+{\item[ESL\_ALPHABET * esl\_alphabet\_Create(int type)]}
+
+Creates one of the three standard bio alphabets:
+\ccode{eslDNA}, \ccode{eslRNA}, or \ccode{eslAMINO}, and returns
+a pointer to it.
+
+Returns pointer to the new alphabet.
+
+Throws \ccode{NULL} if any allocation or initialization fails.
+
+
+\hypertarget{func:esl_alphabet_CreateCustom()}
+{\item[ESL\_ALPHABET * esl\_alphabet\_CreateCustom(const char *alphabet, int K, int Kp)]}
+
+Creates a customized biosequence alphabet,
+and returns a ptr to it. The alphabet type is set 
+to \ccode{eslNONSTANDARD}.
+
+\ccode{alphabet} is the internal alphabet string;
+\ccode{K} is the size of the base alphabet;
+\ccode{Kp} is the total size of the alphabet string. 
+
+In the alphabet string, residues \ccode{0..K-1} are the base alphabet; 
+residue \ccode{K} is the canonical gap (indel) symbol; 
+residues \ccode{K+1..Kp-4} are additional degeneracy symbols (possibly 0 of them);
+residue \ccode{Kp-3} is an "any" symbol (such as N or X); 
+residue \ccode{Kp-2} is a "nonresidue" symbol (such as *); 
+and residue \ccode{Kp-1} is a "missing data" gap symbol.
+
+The two gap symbols, the nonresidue, and the "any"
+symbol are mandatory even for nonstandard alphabets, so
+\ccode{Kp} $\geq$ \ccode{K+4}.
+
+Returns pointer to new \ccode{ESL\_ALPHABET} structure.
+
+Throws \ccode{NULL} if any allocation or initialization fails.
+
+
+\hypertarget{func:esl_alphabet_SetEquiv()}
+{\item[int esl\_alphabet\_SetEquiv(ESL\_ALPHABET *a, char sym, char c)]}
+
+Maps an additional input alphabetic symbol \ccode{sym} to 
+an internal alphabet symbol \ccode{c}; for example,
+we might map T to U for an RNA alphabet, so that we
+allow for reading input DNA sequences.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{c} is not in the internal alphabet, or if \ccode{sym} is.
+
+
+\hypertarget{func:esl_alphabet_SetCaseInsensitive()}
+{\item[int esl\_alphabet\_SetCaseInsensitive(ESL\_ALPHABET *a)]}
+
+Given a custom alphabet \ccode{a}, with all equivalences set,
+make the input map case-insensitive: for every
+letter that is mapped in either lower or upper
+case, map the other case to the same internal
+residue.
+
+For the standard alphabets, this is done automatically.
+
+Returns \ccode{eslOK} on success.                
+
+Throws \ccode{eslECORRUPT} if any lower/uppercase symbol pairs
+are already both mapped to different symbols.
+
+
+\hypertarget{func:esl_alphabet_SetDegeneracy()}
+{\item[int esl\_alphabet\_SetDegeneracy(ESL\_ALPHABET *a, char c, char *ds)]}
+
+Given an alphabet under construction, 
+define the degenerate character \ccode{c} to mean
+any of the characters in the string \ccode{ds}.
+
+\ccode{c} must exist in the digital alphabet, as
+one of the optional degenerate residues (\ccode{K+1}..\ccode{Kp-3}).
+All the characters in the \ccode{ds} string must exist
+in the canonical alphabet (\ccode{0}..\ccode{K-1}).
+
+You may not redefine the mandatory all-degenerate character
+(typically \ccode{N} or \ccode{X}; \ccode{Kp-3} in the digital alphabet).
+It is defined automatically in all alphabets. 
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{c} or \ccode{ds} arguments aren't valid.
+
+
+\hypertarget{func:esl_alphabet_SetIgnored()}
+{\item[int esl\_alphabet\_SetIgnored(ESL\_ALPHABET *a, const char *ignoredchars)]}
+
+Given an alphabet \ccode{a} (either standard or custom), define
+all the characters in string \ccode{ignoredchars} to be
+unmapped: valid, but ignored when converting input text.
+
+By default, the standard alphabets do not define any
+ignored characters.
+
+The most common ignored characters would be space, tab,
+and digits, to skip silently over whitespace and
+sequence coordinates when parsing loosely-defined
+sequence file formats.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_alphabet_Sizeof()}
+{\item[size\_t esl\_alphabet\_Sizeof(ESL\_ALPHABET *a)]}
+
+Returns the size of alphabet \ccode{a} object, in bytes.
+
+
+\hypertarget{func:esl_alphabet_Destroy()}
+{\item[void esl\_alphabet\_Destroy(ESL\_ALPHABET *a)]}
+
+Free's an \ccode{ESL\_ALPHABET} structure.
+
+Returns (void).
+
+
+\hypertarget{func:esl_abc_CreateDsq()}
+{\item[int esl\_abc\_CreateDsq(const ESL\_ALPHABET *a, const char *seq, ESL\_DSQ **ret\_dsq)]}
+
+Given an alphabet \ccode{a} and an ASCII sequence \ccode{seq},
+digitize the sequence into newly allocated space, and 
+return a pointer to that space in \ccode{ret\_dsq}.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_dsq} contains the digitized
+sequence; caller is responsible for free'ing this
+memory. Returns \ccode{eslEINVAL} if \ccode{seq} contains
+one or more characters that are not in the input map of
+alphabet \ccode{a}. If this happens, \ccode{ret\_dsq} is still valid upon
+return: invalid characters are replaced by full ambiguities
+(typically X or N).
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+
+\hypertarget{func:esl_abc_Digitize()}
+{\item[int esl\_abc\_Digitize(const ESL\_ALPHABET *a, const char *seq, ESL\_DSQ *dsq)]}
+
+Given an alphabet \ccode{a} and a nul-terminated ASCII sequence
+\ccode{seq}, digitize the sequence and put it in \ccode{dsq}. Caller
+provides space in \ccode{dsq} allocated for at least \ccode{L+2}
+\ccode{ESL\_DSQ} residues, where \ccode{L} is the length of \ccode{seq}.
+
+Returns \ccode{eslOK} on success.
+Returns \ccode{eslEINVAL} if \ccode{seq} contains one or more characters
+that are not recognized in the alphabet \ccode{a}. (This is classed
+as a normal error, because the \ccode{seq} may be untrusted user input.)
+If this happens, the digital sequence \ccode{dsq} is still valid upon
+return; invalid ASCII characters are replaced by ambiguities
+(X or N).
+
+
+\hypertarget{func:esl_abc_Textize()}
+{\item[int esl\_abc\_Textize(const ESL\_ALPHABET *a, const ESL\_DSQ *dsq, int64\_t L, char *seq)]}
+
+Make an ASCII sequence \ccode{seq} by converting a digital
+sequence \ccode{dsq} of length \ccode{L} back to text, according to
+the digital alphabet \ccode{a}. 
+
+Caller provides space in \ccode{seq} allocated for at least
+\ccode{L+1} bytes (\ccode{(L+1) * sizeof(char)}).
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_abc_TextizeN()}
+{\item[int esl\_abc\_TextizeN(const ESL\_ALPHABET *a, const ESL\_DSQ *dptr, int64\_t L, char *buf)]}
+
+Similar in semantics to \ccode{strncpy()}, this procedure takes
+a window of \ccode{L} residues in a digitized sequence
+starting at the residue pointed to by \ccode{dptr},
+converts them to ASCII text representation, and 
+copies them into the buffer \ccode{buf}.
+
+\ccode{buf} must be at least \ccode{L} residues long; \ccode{L+1}, if the
+caller needs to NUL-terminate it.
+
+If a sentinel byte is encountered in the digitized
+sequence before \ccode{L} residues have been copied, \ccode{buf} is
+NUL-terminated there. Otherwise, like \ccode{strncpy()}, \ccode{buf}
+will not be NUL-terminated.
+
+Note that because digital sequences are indexed \ccode{1..N},
+not \ccode{0..N-1}, the caller must be careful about
+off-by-one errors in \ccode{dptr}. For example, to copy from
+the first residue of a digital sequence \ccode{dsq}, you must
+pass \ccode{dptr=dsq+1}, not \ccode{dptr=dsq}. The text in \ccode{buf}
+on the other hand is a normal C string indexed \ccode{0..L-1}.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_abc_dsqcpy()}
+{\item[int esl\_abc\_dsqcpy(const ESL\_DSQ *dsq, int64\_t L, ESL\_DSQ *dcopy)]}
+
+Given a digital sequence \ccode{dsq} of length \ccode{L},
+make a copy of it in \ccode{dcopy}. Caller provides
+storage in \ccode{dcopy} for at least \ccode{L+2} \ccode{ESL\_DSQ}
+residues.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_abc_dsqdup()}
+{\item[int esl\_abc\_dsqdup(const ESL\_DSQ *dsq, int64\_t L, ESL\_DSQ **ret\_dup)]}
+
+Like \ccode{esl\_strdup()}, but for digitized sequences:
+make a duplicate of \ccode{dsq} and leave it in \ccode{ret\_dup}.
+Caller can pass the string length \ccode{L} if it's known, saving
+some overhead; else pass \ccode{-1} and the length will be
+determined for you.
+
+Tolerates \ccode{dsq} being \ccode{NULL}; in which case, returns
+\ccode{eslOK} with \ccode{*ret\_dup} set to \ccode{NULL}.
+
+Returns \ccode{eslOK} on success, and leaves a pointer in \ccode{ret\_dup}.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+
+\hypertarget{func:esl_abc_dsqcat()}
+{\item[int esl\_abc\_dsqcat(const ESL\_DSQ *inmap, ESL\_DSQ **dsq, int64\_t *L, const char *s, esl\_pos\_t n)]}
+
+Append the contents of string or memory line \ccode{s} of
+length \ccode{n} to a digital sequence, after digitizing  
+each input character in \ccode{s} according to an Easel
+\ccode{inmap}. The destination sequence and its length
+are passed by reference, \ccode{*dsq} and \ccode{*L}, so that
+the sequence may be reallocated and the length updated
+upon return.
+
+The input map \ccode{inmap} may map characters to
+\ccode{eslDSQ\_IGNORED} or \ccode{eslDSQ\_ILLEGAL}, but not to \ccode{eslDSQ\_EOL},
+\ccode{eslDSQ\_EOD}, or \ccode{eslDSQ\_SENTINEL} codes. \ccode{inmap[0]} is
+special, and must be set to the code for the 'unknown'
+residue (such as 'X' for proteins, 'N' for DNA) that
+will be used to replace any invalid \ccode{eslDSQ\_ILLEGAL}
+characters.
+
+If \ccode{*dsq} is properly terminated digital sequence and
+the caller doesn't know its length, \ccode{*L} may be passed
+as -1. Providing the length when it's known saves an
+\ccode{esl\_abc\_dsqlen()} call. If \ccode{*dsq} is unterminated, \ccode{*L}
+is mandatory. Essentially the same goes for \ccode{*s}, which
+may be a NUL-terminated string (pass \ccode{n=-1} if length unknown),
+or a memory line (\ccode{n} is mandatory). 
+
+\ccode{*dsq} may also be \ccode{NULL}, in which case it is allocated
+and initialized here.
+
+Caller should provide an \ccode{s} that is expected to be
+essentially all appendable to \ccode{*dsq} except for a small
+number of chars that map to \ccode{eslDSQ\_IGNORE}, like an
+input sequence data line from a file, for example. We're
+going to reallocate \ccode{*dsq} to size \ccode{*L+n}; if \ccode{n} is an
+entire large buffer or file, this reallocation will be
+inefficient.
+
+Returns \ccode{eslOK} on success; \ccode{*dsq} contains the result of digitizing
+and appending \ccode{s} to the original \ccode{*dsq}; and \ccode{*L} contains
+the new length of the \ccode{dsq} result in residues.
+
+If any of the characters in \ccode{s} are illegal in the
+alphabet \ccode{abc}, these characters are digitized as
+unknown residues (using \ccode{inmap[0]}) and
+concatenation/digitization proceeds to completion, but
+the function returns \ccode{eslEINVAL}. The caller might then
+want to call \ccode{esl\_abc\_ValidateSeq()} on \ccode{s} if it wants
+to figure out where digitization goes awry and get a
+more informative error report. This is a normal error,
+because the string \ccode{s} might be user input.
+
+Throws \ccode{eslEMEM} on allocation or reallocation failure;
+\ccode{eslEINCONCEIVABLE} on coding error.
+
+
+
+\hypertarget{func:esl_abc_dsqcat_noalloc()}
+{\item[int esl\_abc\_dsqcat\_noalloc(const ESL\_DSQ *inmap, ESL\_DSQ *dsq, int64\_t *L, const char *s, esl\_pos\_t n)]}
+
+Same as \ccode{esl\_abc\_dsqcat()}, but with no reallocation of
+\ccode{dsq}. The pointer to the destination string \ccode{dsq} is 
+passed by value not by reference, because it will not
+be reallocated or moved. Caller has already allocated 
+at least \ccode{*L + n + 2} bytes in \ccode{dsq}. \ccode{*L} and \ccode{n} are
+not optional; caller must know (and provide) the lengths
+of both the old string and the new source.
+
+
+
+\hypertarget{func:esl_abc_dsqlen()}
+{\item[int64\_t esl\_abc\_dsqlen(const ESL\_DSQ *dsq)]}
+
+Returns the length of digitized sequence \ccode{dsq} in
+positions (including gaps, if any). The \ccode{dsq} must be
+properly terminated by a sentinel byte
+(\ccode{eslDSQ\_SENTINEL}).  
+
+
+\hypertarget{func:esl_abc_dsqrlen()}
+{\item[int64\_t esl\_abc\_dsqrlen(const ESL\_ALPHABET *abc, const ESL\_DSQ *dsq)]}
+
+Returns the unaligned length of digitized sequence
+\ccode{dsq}, in residues, not counting any gaps, nonresidues,
+or missing data symbols. 
+
+
+\hypertarget{func:esl_abc_CDealign()}
+{\item[int esl\_abc\_CDealign(const ESL\_ALPHABET *abc, char *s, const ESL\_DSQ *ref\_ax, int64\_t *opt\_rlen)]}
+
+Dealigns \ccode{s} in place by removing characters aligned to
+gaps (or missing data symbols) in the reference digital
+aligned sequence \ccode{ref\_ax}. Gaps and missing data symbols
+in \ccode{ref\_ax} are defined by its digital alphabet \ccode{abc}.
+
+\ccode{s} is typically going to be some kind of textual
+annotation string (secondary structure, consensus, or
+surface accessibility).
+
+Be supercareful of off-by-one errors here! The \ccode{ref\_ax}
+is a digital sequence that is indexed \ccode{1..L}. The
+annotation string \ccode{s} is assumed to be \ccode{0..L-1} (a
+normal C string), off by one with respect to \ccode{ref\_ax}.
+In a sequence object, ss annotation is actually stored
+\ccode{1..L} -- so if you're going to \ccode{esl\_abc\_CDealign()} a
+\ccode{sq->ss}, pass \ccode{sq->ss+1} as the argument \ccode{s}.
+
+Returns Returns \ccode{eslOK} on success; optionally returns the number
+of characters in the dealigned \ccode{s} in \ccode{*opt\_rlen}.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_abc_XDealign()}
+{\item[int esl\_abc\_XDealign(const ESL\_ALPHABET *abc, ESL\_DSQ *x, const ESL\_DSQ *ref\_ax, int64\_t *opt\_rlen)]}
+
+Dealigns \ccode{x} in place by removing characters aligned to
+gaps (or missing data) in the reference digital aligned
+sequence \ccode{ref\_ax}. Gaps and missing data symbols in
+\ccode{ref\_ax} are defined by its digital alphabet \ccode{abc}.
+
+Returns Returns \ccode{eslOK} on success; optionally returns the number
+of characters in the dealigned \ccode{x} in \ccode{*opt\_rlen}.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_abc_ConvertDegen2X()}
+{\item[int esl\_abc\_ConvertDegen2X(const ESL\_ALPHABET *abc, ESL\_DSQ *dsq)]}
+
+Convert all the degenerate residue codes in digital
+sequence \ccode{dsq} to the code for the maximally degenerate 
+"unknown residue" code, as specified in digital alphabet
+\ccode{abc}. (For example, X for protein, N for nucleic acid.)
+
+This comes in handy when you're dealing with some piece
+of software that can't deal with standard residue codes,
+and you want to massage your sequences into a form that
+can be accepted. For example, WU-BLAST can't deal with O
+(pyrrolysine) residues, but UniProt has O codes.
+
+Returns \ccode{eslOK} on success.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_abc_revcomp()}
+{\item[int esl\_abc\_revcomp(const ESL\_ALPHABET *abc, ESL\_DSQ *dsq, int n)]}
+
+Reverse complement \ccode{dsq}, in place, according to
+its digital alphabet \ccode{abc}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINCOMPAT} if alphabet \ccode{abc} can't be reverse complemented
+
+
+\hypertarget{func:esl_abc_ValidateType()}
+{\item[int esl\_abc\_ValidateType(int type)]}
+
+Returns \ccode{eslOK} if \ccode{type} is a valid and known Easel
+alphabet type code.
+
+Used to validate "user" input, where we're parsing a
+file format that has stored an Easel alphabet code.
+
+Returns \ccode{eslFAIL} for the special \ccode{eslUNKNOWN} "unset"
+value, even though that is a valid code, because it's
+not an alphabet, so shouldn't show up in a file.
+
+
+\hypertarget{func:esl_abc_GuessAlphabet()}
+{\item[int esl\_abc\_GuessAlphabet(const int64\_t *ct, int *ret\_type)]}
+
+Guess the alphabet type from a residue composition.
+The input \ccode{ct[0..25]} array contains observed counts of 
+the letters A..Z, case-insensitive. 
+
+The composition \ccode{ct} must contain more than 10 residues.
+
+If it contains $\geq$98\% ACGTN and all four of the
+residues ACGT occur, call it \ccode{eslDNA}. (Analogously for
+ACGUN, ACGU: call \ccode{eslRNA}.)
+
+If it contains any amino-specific residue (EFIJLPQZ),
+call it \ccode{eslAMINO}.  
+
+If it consists of $\geq$98\% canonical aa residues or X,
+and at least 15 of the different 20 aa residues occur,
+and the number of residues that are canonical aa/degenerate
+nucleic (DHKMRSVWY) is greater than the number of canonicals
+for both amino and nucleic (ACG); then call it \ccode{eslAMINO}.
+
+As a special case, if it consists entirely of N's, and
+we have >2000 residues, call it \ccode{eslDNA}. This is a
+special case that deals with genome sequence assemblies
+that lead with a swath of N's.
+
+We aim to be very conservative, essentially never making
+a false call; we err towards calling \ccode{eslUNKNOWN} if
+unsure. Our test is to classify every individual
+sequence in NCBI NR and NT (or equiv large messy
+sequence database) with no false positives, only correct
+calls or \ccode{eslUNKNOWN}.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_type} is set to
+\ccode{eslAMINO}, \ccode{eslRNA}, or \ccode{eslDNA}.
+
+Returns \ccode{eslENOALPHABET} if unable to determine the
+alphabet type; in this case, \ccode{*ret\_type} is set to 
+\ccode{eslUNKNOWN}.
+
+
+
+\hypertarget{func:esl_abc_Match()}
+{\item[double esl\_abc\_Match(const ESL\_ALPHABET *abc, ESL\_DSQ x, ESL\_DSQ y, double *p)]}
+
+Given two digital symbols \ccode{x} and \ccode{y} in alphabet
+\ccode{abc}, calculate and return the probability that
+\ccode{x} and \ccode{y} match, taking degenerate residue codes
+into account.
+
+If \ccode{p} residue probability vector is NULL, the
+calculation is a simple average. For example, for DNA,
+R/A gives 0.5, C/N gives 0.25, N/R gives 0.25, R/R gives
+0.5.
+
+If \ccode{p} residue probability vector is non-NULL, it gives
+a 0..K-1 array of background frequencies, and the
+returned match probability is an expectation (weighted
+average) given those residue frequencies.
+
+\ccode{x} and \ccode{y} should only be residue codes. Any other
+comparison, including comparisons involving gap or
+missing data characters, or even comparisons involving
+illegal digital codes, returns 0.0.
+
+Note that comparison of residues from "identical"
+sequences (even a self-comparison) will not result in an
+identity of 1.0, if the sequence(s) contain degenerate
+residue codes.
+
+Returns the probability of an identity (match) between
+residues \ccode{x} and \ccode{y}.
+
+
+\hypertarget{func:esl_abc_IAvgScore()}
+{\item[int esl\_abc\_IAvgScore(const ESL\_ALPHABET *a, ESL\_DSQ x, const int *sc)]}
+
+Given a residue code \ccode{x} in alphabet \ccode{a}, and an array of
+integer scores \ccode{sc} for the residues in the base
+alphabet, calculate and return the average score
+(rounded to nearest integer).
+
+\ccode{x} would usually be a degeneracy code, but it
+may also be a canonical residue. It must not
+be a gap, missing data, or illegal symbol; if it
+is, these functions return a score of 0 without
+raising an error.
+
+\ccode{esl\_abc\_FAvgScore()} and \ccode{esl\_abc\_DAvgScore()} do the
+same, but for float and double scores instead of integers
+(and for real-valued scores, no rounding is done).
+
+Returns average score for symbol \ccode{x}          
+
+
+\hypertarget{func:esl_abc_IExpectScore()}
+{\item[int esl\_abc\_IExpectScore(const ESL\_ALPHABET *a, ESL\_DSQ x, const int *sc, const float *p)]}
+
+Given a residue code \ccode{x} in alphabet \ccode{a}, an
+array of integer scores \ccode{sc} for the residues in the base
+alphabet, and background frequencies \ccode{p} for the
+occurrence frequencies of the residues in the base
+alphabet, calculate and return the expected score
+(weighted by the occurrence frequencies \ccode{p}).
+
+\ccode{x} would usually be a degeneracy code, but it
+may also be a canonical residue. It must not
+be a gap, missing data, or illegal symbol; if it
+is, these functions return a score of 0 without
+raising an error.
+
+\ccode{esl\_abc\_FExpectScore()} and \ccode{esl\_abc\_DExpectScore()} do the
+same, but for float and double scores instead of integers
+(for real-valued scores, no rounding is done).
+
+Returns average score for symbol \ccode{x}          
+
+
+\hypertarget{func:esl_abc_IAvgScVec()}
+{\item[int esl\_abc\_IAvgScVec(const ESL\_ALPHABET *a, int *sc)]}
+
+Given an alphabet \ccode{a} and a score vector \ccode{sc} of length
+\ccode{a->Kp} that contains integer scores for the base
+alphabet (\ccode{0..a->K-1}), fill out the rest of the score 
+vector, calculating average scores for 
+degenerate residues using \ccode{esl\_abc\_IAvgScore()}.
+
+The score, if any, for a gap character \ccode{K}, the
+nonresidue \ccode{Kp-2}, and the missing data character \ccode{Kp-1}
+are untouched by this function. Only the degenerate
+scores \ccode{K+1..Kp-3} are filled in.
+
+\ccode{esl\_abc\_FAvgScVec()} and \ccode{esl\_abc\_DAvgScVec()} do
+the same, but for score vectors of floats or doubles,
+respectively.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_abc_IExpectScVec()}
+{\item[int esl\_abc\_IExpectScVec(const ESL\_ALPHABET *a, int *sc, const float *p)]}
+
+Given an alphabet \ccode{a}, a score vector \ccode{sc} of length
+\ccode{a->Kp} that contains integer scores for the base
+alphabet (\ccode{0..a->K-1}), and residue occurrence probabilities
+\ccode{p[0..a->K-1]}; fill in the scores for the
+degenerate residues \ccode{K+1..Kp-3} using \ccode{esl\_abc\_IExpectScore()}.
+
+The score, if any, for a gap character \ccode{K}, the
+nonresidue \ccode{Kp-2}, and the missing data character \ccode{Kp-1}
+are untouched by this function. Only the degenerate
+scores \ccode{K+1..Kp-3} are filled in.
+
+\ccode{esl\_abc\_FExpectScVec()} and \ccode{esl\_abc\_DExpectScVec()} do
+the same, but for score vectors of floats or doubles,
+respectively. The probabilities \ccode{p} are floats for the
+integer and float versions, and doubles for the double
+version.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_abc_FCount()}
+{\item[int esl\_abc\_FCount(const ESL\_ALPHABET *abc, float *ct, ESL\_DSQ x, float wt)]}
+
+Count a possibly degenerate digital symbol \ccode{x} (0..Kp-1)
+into a counts array \ccode{ct} for base symbols (0..K-1).
+Assign the symbol a weight of \ccode{wt} (often just 1.0).
+The count weight of a degenerate symbol is divided equally
+across the possible base symbols. 
+
+\ccode{x} can be a gap; if so, \ccode{ct} must be allocated 0..K,
+not 0..K-1. If \ccode{x} is a missing data symbol, or a nonresidue
+data symbol, nothing is done.
+
+\ccode{esl\_abc\_DCount()} does the same, but for double-precision
+count vectors and weights.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_abc_EncodeType()}
+{\item[int esl\_abc\_EncodeType(char *type)]}
+
+Convert a string like "amino" or "DNA" to the
+corresponding Easel internal alphabet type code
+such as \ccode{eslAMINO} or \ccode{eslDNA}; return the code.
+
+Returns the code, such as \ccode{eslAMINO}; if \ccode{type} isn't
+recognized, returns \ccode{eslUNKNOWN}.
+
+
+\hypertarget{func:esl_abc_EncodeTypeMem()}
+{\item[int esl\_abc\_EncodeTypeMem(char *type, int n)]}
+
+Same as \ccode{esl\_abc\_EncodeType()}, but for a
+non-NUL terminated memory chunk \ccode{type} of
+length \ccode{n}.
+
+
+\hypertarget{func:esl_abc_DecodeType()}
+{\item[char * esl\_abc\_DecodeType(int type)]}
+
+For diagnostics and other output: given an internal
+alphabet code \ccode{type} (\ccode{eslRNA}, for example), return
+pointer to an internal string ("RNA", for example). 
+
+
+\hypertarget{func:esl_abc_ValidateSeq()}
+{\item[int esl\_abc\_ValidateSeq(const ESL\_ALPHABET *a, const char *seq, int64\_t L, char *errbuf)]}
+
+Check that sequence \ccode{seq} of length \ccode{L} can be digitized
+without error; all its symbols are valid in alphabet
+\ccode{a}. If so, return \ccode{eslOK}. If not, return \ccode{eslEINVAL}.
+
+If \ccode{a} is \ccode{NULL}, we still validate that at least the
+\ccode{seq} consists only of ASCII characters.
+
+\ccode{errbuf} is either passed as \ccode{NULL}, or a pointer to an
+error string buffer allocated by the caller for
+\ccode{eslERRBUFSIZE} characters. If \ccode{errbuf} is non-NULL, and
+the sequence is invalid, an error message is placed in
+\ccode{errbuf}.
+
+Returns \ccode{eslOK} if \ccode{seq} is valid; \ccode{eslEINVAL} if not.
+
+Throws (no abnormal error conditions).
+
+
+\end{sreapi}
+

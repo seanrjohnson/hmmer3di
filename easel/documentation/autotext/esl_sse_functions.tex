@@ -1,0 +1,29 @@
+\begin{sreapi}
+\hypertarget{func:esl_sse_logf()}
+{\item[\_\_m128 esl\_sse\_logf(\_\_m128 x)]}
+
+Given a vector \ccode{x} containing four floats, returns a
+vector \ccode{r} in which each element \ccode{r[z] = logf(x[z])}.
+
+Valid in the domain $x_z > 0$ for normalized IEEE754
+$x_z$.
+
+For \ccode{x} $< 0$, including -0, returns \ccode{NaN}. For \ccode{x} $==
+0$ or subnormal \ccode{x}, returns \ccode{-inf}. For \ccode{x = inf},
+returns \ccode{inf}. For \ccode{x = NaN}, returns \ccode{NaN}. For 
+subnormal \ccode{x}, returns \ccode{-inf}.
+
+
+
+\hypertarget{func:esl_sse_expf()}
+{\item[\_\_m128 esl\_sse\_expf(\_\_m128 x)]}
+
+Given a vector \ccode{x} containing four floats, returns a
+vector \ccode{r} in which each element \ccode{r[z] = expf(x[z])}.
+
+Valid for all IEEE754 floats $x_z$.
+
+
+
+\end{sreapi}
+

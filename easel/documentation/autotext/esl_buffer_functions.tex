@@ -1,0 +1,646 @@
+\begin{sreapi}
+\hypertarget{func:esl_buffer_Open()}
+{\item[int esl\_buffer\_Open(const char *filename, const char *envvar, ESL\_BUFFER **ret\_bf)]}
+
+Open \ccode{filename} for parsing. Return an open
+\ccode{ESL\_BUFFER} for it.
+
+The standard Easel idiom allows reading from standard
+input (pass \ccode{filename} as '-'), allows reading gzip'ed
+files automatically (any \ccode{filename} ending in \ccode{.gz} is
+opened as a pipe from \ccode{gzip -dc}), and allows using an
+environment variable to specify a colon-delimited list
+of directories in which \ccode{filename} may be found. Normal
+files are memory mapped (if \ccode{mmap()} is available) when
+they are large, and slurped into memory if they are
+small.
+
+If \ccode{filename} is '-' (a single dash character), 
+capture the standard input stream rather than 
+opening a file; return \ccode{eslOK}.
+
+Else, try to find \ccode{filename} in a directory \ccode{d},
+starting with the current working directory. If
+\ccode{./filename} is found (note that \ccode{filename} may include
+a relative path), directory \ccode{d} is \ccode{.}.  Else, if
+\ccode{envvar} is non-\ccode{NULL}, check the environment variable
+\ccode{envvar} for a colon-delimited list of directories, and
+for each directory \ccode{d} in that list, try to find
+\ccode{d/filename}. Use the first \ccode{d} that succeeds. If
+none succeed, return \ccode{eslENOTFOUND}.
+
+Now open the file. If \ccode{filename} ends in \ccode{.gz}, 'open'
+it by running \ccode{gzip -dc d/filename 2}/dev/null>,
+capturing the standard output from gunzip decompression
+in the \ccode{ESL\_BUFFER}. Otherwise, open \ccode{d/filename} as a
+normal file. If its size is not more than
+\ccode{eslBUFFER\_SLURPSIZE} (default 4 MB), it is slurped into
+memory; else, if \ccode{mmap()} is available, it is memory
+mapped; else, it is opened as a read-only binary stream
+with \ccode{fopen()} in mode \ccode{"rb"}.
+
+Returns \ccode{eslOK} on success; \ccode{*ret\_bf} is the new \ccode{ESL\_BUFFER}.
+
+\ccode{eslENOTFOUND} if file isn't found or isn't readable.
+\ccode{eslFAIL} if gzip -dc fails on a .gz file, probably 
+because a gzip executable isn't found in PATH. 
+
+On any normal error, \ccode{*ret\_bf} is still returned,
+in an unset state, with a user-directed error message
+in \ccode{*ret\_bf->errmsg}.
+
+Throws \ccode{eslESYS} on system call failures (such as fread()).
+\ccode{eslEMEM} on allocation failure.
+Now \ccode{*ret\_bf} is \ccode{NULL}.
+
+
+\hypertarget{func:esl_buffer_OpenFile()}
+{\item[int esl\_buffer\_OpenFile(const char *filename, ESL\_BUFFER **ret\_bf)]}
+
+Open \ccode{filename} for reading. Return an open \ccode{ESL\_BUFFER} in
+\ccode{*ret\_bf}.
+
+\ccode{filename} may be a relative path such as \ccode{subdir/foo}
+or a full path such as \ccode{/my/dir/foo}.
+
+On a POSIX-compliant system, large files are memory 
+mapped, and small files are just slurped into memory.
+
+On non-POSIX systems, the file is opened as a stream.
+On a short initial read (if the file size is smaller than
+the buffer page size), the file is considered to be
+completely slurped.
+
+Returns \ccode{eslOK} on success; \ccode{*ret\_bf} is new \ccode{ESL\_BUFFER}.
+
+\ccode{eslENOTFOUND} if \ccode{filename} isn't found or isn't readable.
+
+On normal errors, a new \ccode{*ret\_bf} is still returned, in
+an unset state, with a user-directed error message in
+\ccode{*ret\_bf->errmsg}.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_buffer_OpenPipe()}
+{\item[int esl\_buffer\_OpenPipe(const char *filename, const char *cmdfmt, ESL\_BUFFER **ret\_bf)]}
+
+Run the command \ccode{cmdfmt} on \ccode{filename} and capture its \ccode{stdout}
+stream for parsing. Return the open \ccode{ESL\_BUFFER} in
+\ccode{*ret\_bf}.
+
+\ccode{cmdfmt} has a restricted format; it is a \ccode{printf()}-style
+format string with a single \ccode{\%s}, where \ccode{filename} is to
+be substituted. An example \ccode{cmdfmt} is "gzip -dc %s
+2>/dev/null".
+
+\ccode{filename} is checked for existence and read permission
+before a command line is constructed.
+
+\ccode{filename} may be \ccode{NULL}. In this case, \ccode{cmdfmt} is
+assumed to be be the complete command, and (obviously)
+the diagnostic check for \ccode{filename}
+existence/readability is skipped. This gives you some
+ability to skip the restricted single-argument format of
+\ccode{cmdfmt}.  If you need to do something fancier with a
+pipe, you can always open and manage it yourself and use
+\ccode{esl\_buffer\_OpenStream()}.
+
+\ccode{popen()} executes the command under \ccode{/bin/sh}.
+
+The \ccode{stderr} stream of the command should almost
+certainly be redirected (else it will appear on output
+of your program). In general it should be discarded
+to \ccode{/dev/null}. One of the only signs of a command
+failure is that the command produces a "short read", of
+less than \ccode{bf->pagesize} (and often 0, on a complete
+failure, if \ccode{stderr} has been discarded).  If \ccode{stderr}
+is longer than the buffer's \ccode{pagesize}, we may not
+accurately detect error conditions. If you must capture
+\ccode{stderr} (for example with a \ccode{cmdfmt} like
+"gzip -dc %s 2>&1") be aware that the parser may
+see that output as "successful" execution, if it's long
+enough.
+
+The reason to pass \ccode{cmdfmt} and \ccode{filename} separately is
+to enable better error diagnostics. \ccode{popen()} itself
+tends to "succeed" whether the command or the file exist
+or not.  By having \ccode{filename}, we can check for its
+existence/readability first.
+
+The reason that error checking \ccode{popen()} isn't entirely
+straightforward is that we don't see the exit status of
+the command until we \ccode{pclose()}. We can only \ccode{pclose()}
+when we're done loading data from the file, and that
+only happens here on a short initial read. If we do get
+a short read, we \ccode{pclose()}, get and check the command's
+exit status, and return the \ccode{ESL\_BUFFER} in an
+\ccode{eslBUFFER\_ALLFILE} state with \ccode{bf->cmdline} set.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_bf} is the new \ccode{ESL\_BUFFER}.
+
+\ccode{eslENOTFOUND} if \ccode{filename} isn't found or isn't readable.
+
+\ccode{eslFAIL} if the constructed command fails - which
+usually means that the program isn't found or isn't
+executable, or that the command returned nonzero
+(quickly, i.e. with zero or little output and a 'short
+read').
+
+On any normal error, the \ccode{*ret\_bf} is returned (in an
+\ccode{eslBUFFER\_UNSET} state) and \ccode{bf->errmsg} contains a
+user-directed error message.
+
+Throws \ccode{eslESYS} on \ccode{*sprintf()} or \ccode{fread()} failure.
+\ccode{eslEMEM} on allocation failure.
+
+On any exception, \ccode{*ret\_bf} is NULL.
+
+
+\hypertarget{func:esl_buffer_OpenMem()}
+{\item[int esl\_buffer\_OpenMem(const char *p, esl\_pos\_t n, ESL\_BUFFER **ret\_bf)]}
+
+Given a buffer or string \ccode{p} of length \ccode{n}, turn it into
+an \ccode{ESL\_BUFFER}. Return the new buffer in \ccode{*ret\_bf}.
+
+The memory for \ccode{p} is still managed by the caller. 
+Caller should free it, if necessary, only after the 
+\ccode{ESL\_BUFFER} has been closed. 
+
+As a special case, if \ccode{n} is -1, \ccode{p} is assumed to be a
+\verb+\0+-terminated string and its length is calculated with
+\ccode{strlen()}.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_bf} points to new buffer.
+
+Throws \ccode{eslEMEM} on allocation failure.
+On any exception, \ccode{*ret\_bf} is \ccode{NULL}.
+
+
+\hypertarget{func:esl_buffer_OpenStream()}
+{\item[int esl\_buffer\_OpenStream(FILE *fp, ESL\_BUFFER **ret\_bf)]}
+
+Given an open stream \ccode{fp} for reading, create an
+\ccode{ESL\_BUFFER} around it.
+
+\ccode{fp} is often \ccode{stdin}, for example.
+
+The caller remains responsible for closing \ccode{fp}, if it
+opened it. 
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_bf} points to a new \ccode{ESL\_BUFFER}.
+
+Throws \ccode{eslEINVAL}: \ccode{fp} is NULL, in error state, or already at eof before any reading occurs.
+\ccode{eslESYS} : fread() failed
+\ccode{eslEMEM} : an allocation failed
+
+
+\hypertarget{func:esl_buffer_Close()}
+{\item[int esl\_buffer\_Close(ESL\_BUFFER *bf)]}
+
+Close the input buffer \ccode{bf}, freeing all resources that it
+was responsible for.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslESYS} on a system call failure such as \ccode{munmap()}, \ccode{pclose()}, or \ccode{fclose()}.
+
+
+
+\hypertarget{func:esl_buffer_GetOffset()}
+{\item[esl\_pos\_t esl\_buffer\_GetOffset(ESL\_BUFFER *bf)]}
+
+Returns the current offset position of the parser
+in the input buffer: \ccode{bf->baseoffset + bf->pos}.
+
+
+\hypertarget{func:esl_buffer_SetOffset()}
+{\item[int esl\_buffer\_SetOffset(ESL\_BUFFER *bf, esl\_pos\_t offset)]}
+
+Set the buffer's internal state (\ccode{bf->pos}) to position
+\ccode{offset} in the input. Load new data into the buffer if
+necessary.
+
+In modes where \ccode{bf->mem} contains the whole input
+(ALLFILE, MMAP, STRING), this always works.
+
+In modes where we're reading a
+nonrewindable/nonpositionable stream (STREAM, CMDPIPE),
+\ccode{offset} may be at or ahead of the current position, but
+rewinding to an offset behind the current position only
+works if \ccode{offset} is within the current buffer
+window. If the caller knows it wants to return to some
+\ccode{offset} later, it should set an anchor to make sure it
+stays in the buffer. New data may need to be read into
+\ccode{bf->mem} to assure \ccode{pagesize} bytes are available. If
+an anchor is set, this may require reoffset and/or
+reallocation of \ccode{bf->mem}.
+
+FILE mode is handled as above, but additionally, if no
+anchor is set and \ccode{offset} is not in the current buffer,
+\ccode{fseeko()} is used to reposition in the open file. If
+\ccode{fseeko()} is unavailable (non-POSIX compliant systems),
+FILE mode is handled like other streams, with limited
+rewind ability.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{offset} is invalid, either because it 
+would require rewinding the (nonrewindable) stream, 
+or because it's beyond the end.
+\ccode{eslESYS} if a system call fails, such as fread().
+\ccode{eslEMEM} on allocation failure.
+\ccode{eslEINCONCEIVABLE} if \ccode{bf} internal state is corrupt.
+
+
+\hypertarget{func:esl_buffer_SetAnchor()}
+{\item[int esl\_buffer\_SetAnchor(ESL\_BUFFER *bf, esl\_pos\_t offset)]}
+
+Set an anchor at byte \ccode{offset} (in input coords) in
+input \ccode{bf}: which means, keep everything from this byte
+on in buffer memory, until anchor is raised.
+
+The presence of an anchor affects new reads from \ccode{fp};
+\ccode{mem[r..n-1]} are protected from overwrite, and may be
+moved to \ccode{mem[0..n-r-1]} as new data is read from the
+stream.  Anchors are only needed for input streams that
+we read chunkwise.  If entire input is already in \ccode{bf},
+setting an anchor is a no-op.
+
+In general, the caller should remember what anchor(s) it
+sets, so it can raise them later with
+\ccode{esl\_buffer\_RaiseAnchor()}.
+
+Byte \ccode{offset} must be in the current buffer window. If
+not, an \ccode{eslEINVAL} exception is thrown.
+
+Only one anchor is active at a time. If an anchor is
+already set for \ccode{bf}, the most upstream one is used.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{offset} is not in current buffer window.
+
+
+\hypertarget{func:esl_buffer_SetStableAnchor()}
+{\item[int esl\_buffer\_SetStableAnchor(ESL\_BUFFER *bf, esl\_pos\_t offset)]}
+
+Same as \ccode{esl\_buffer\_SetAnchor()}, except the anchor is
+such that all pointers returned by \ccode{\_Get*()} functions
+(i.e. as opposed to just the last \ccode{\_Get*} function)
+will remain valid at least until the anchor is raised.
+
+The main use of this is when the caller wants to get
+multiple lines or tokens in the input before parsing 
+them. 
+
+A stable anchor prevents buffer refills/reloads from
+moving the internal memory around while the anchor is
+in place.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{offset} is not in current buffer window.
+
+
+
+\hypertarget{func:esl_buffer_RaiseAnchor()}
+{\item[int esl\_buffer\_RaiseAnchor(ESL\_BUFFER *bf, esl\_pos\_t offset)]}
+
+Declare that an anchor previously set at \ccode{offset}
+in buffer \ccode{bf} may be raised. 
+
+\ccode{offset} is in absolute input coordinates (\ccode{0..len-1} for
+an input of length \ccode{len}). Because it's supposed to be
+anchored, this position ought to be in the current
+buffer window. If an anchor is in effect in \ccode{bf}, 
+\ccode{offset} should be at or distal to that anchor.
+
+The buffer's memory and position are not changed yet.  A
+caller can raise an anchor and still assume that the
+buffer contains all data from that anchor, until the
+next call to something that would alter the buffer.
+
+Returns \ccode{eslOK} on success.
+
+Throws (none)
+
+
+\hypertarget{func:esl_buffer_Get()}
+{\item[int esl\_buffer\_Get(ESL\_BUFFER *bf, char **ret\_p, esl\_pos\_t *ret\_n)]}
+
+Given a buffer \ccode{bf}, return a pointer to the current
+parsing position in \ccode{*ret\_p}, and the number of valid
+bytes from that position in \ccode{*ret\_n}.
+
+If buffer is at EOF (no valid bytes remain), returns
+\ccode{eslEOF} with \ccode{NULL} in \ccode{*ret\_p} and 0 in \ccode{*ret\_n}.
+
+The buffer's parsing position \ccode{bf->pos} is NOT 
+changed. Another \ccode{Get()} call will return exactly
+the same \ccode{p} and \ccode{n}. Each \ccode{Get()} call is generally
+followed by a \ccode{Set()} call. It's the \ccode{Set()} call
+that moves \ccode{bf->pos} and refills the buffer.
+
+Assumes that the buffer \ccode{bf} is correctly loaded,
+with either at least \ccode{pagesize} bytes after the 
+parser position, or near/at EOF.
+
+Returns \ccode{eslOK} on success;
+\ccode{eslEOF} if no valid bytes remain in the input, or if
+\ccode{*ret\_n} is less than \ccode{nrequest}. 
+
+Throws \ccode{eslEMEM} on allocation failure. 
+\ccode{eslESYS} if fread() fails mysteriously.
+\ccode{eslEINCONCEIVABLE} if internal state of \ccode{bf} is corrupt.
+
+
+\hypertarget{func:esl_buffer_Set()}
+{\item[int esl\_buffer\_Set(ESL\_BUFFER *bf, char *p, esl\_pos\_t nused)]}
+
+Reset the state of buffer \ccode{bf}: we were recently
+given a pointer \ccode{p} by an \ccode{esl\_buffer\_Get()} call
+and we parsed \ccode{nused} bytes starting at \ccode{p[0]}. 
+
+\ccode{bf->pos} is set to point at \ccode{p+nused}, and we
+reload the buffer (if necessary) to try to have at
+least \ccode{bf->pagesize} bytes of input following that
+position.
+
+One use is in raw parsing, where we stop parsing
+somewhere in the buffer:
+\begin{cchunk}
+esl_buffer_Get(bf, &p, &n);
+(do some stuff on p[0..n-1], using up \ccode{nused} bytes)
+esl_buffer_Set(bf, p, nused);
+\end{cchunk}
+This includes the case of nused=n, where we parse the
+whole buffer that Get() gave us, and the Set() call may
+be needed to load new input data before the next Get().
+
+Another use is an idiom for peeking at a token, line, or
+a number of bytes without moving the parser position:
+\begin{cchunk}
+esl_buffer_GetLine(bf, &p, &n);
+(do we like what we see in p[0..n-1]? no? then put it back)
+esl_buffer_Set(bf, p, 0);
+\end{cchunk}
+
+Because it is responsible for loading new input as
+needed, Set() may reoffset and reallocate \ccode{mem}. If the
+caller wants an anchor respected, it must make sure that
+anchor is still in effect; i.e., a caller that is
+restoring state to an \ccode{ESL\_BUFFER} should call Set()
+BEFORE calling RaiseAnchor().
+
+As a special case, if \ccode{p} is NULL, then \ccode{nused} is
+ignored, \ccode{bf->pos} is left whereever it was, and the
+only thing the \ccode{Set()} attempts to do is to fulfill the
+pagesize guarantee from the current position. If a
+\ccode{NULL} \ccode{p} has been returned by a Get*() call because we
+reached EOF, for example in some parsing loop that the
+EOF has broken us out of, it is safe to call
+\ccode{esl\_buffer\_Set(bf, NULL, 0)}: this is a no-op on a
+buffer that is at EOF.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure. 
+\ccode{eslESYS} if fread() fails mysteriously.
+\ccode{eslEINCONCEIVABLE} if internal state of \ccode{bf} is corrupt.
+
+
+\hypertarget{func:esl_buffer_GetLine()}
+{\item[int esl\_buffer\_GetLine(ESL\_BUFFER *bf, char **opt\_p, esl\_pos\_t *opt\_n)]}
+
+Get a pointer \ccode{*opt\_p} to the next line in buffer \ccode{bf},
+and the length of the line in \ccode{*opt\_n} (in bytes, and
+exclusive of newline bytes). Advance buffer position
+past (one) newline, putting it on the next valid data
+byte. Thus \ccode{p[0..n-1]} is one data line. It is not
+NUL-terminated.
+
+\ccode{bf}'s buffer may be re(al)located as needed, to get
+the whole line into the current window.
+
+Because the caller only gets a pointer into \ccode{bf}'s 
+internal state, no other \ccode{esl\_buffer} functions 
+should be called until the caller is done with \ccode{p}.
+
+To peek at next line, use Set to restore \ccode{bf}'s state:
+\begin{cchunk}
+esl_buffer_GetLine(bf, &p, &n);
+esl_buffer_Set(bf, p, 0);           
+\end{cchunk}
+
+Returns \ccode{eslOK} on success.  \ccode{*opt\_p} is a valid pointer into \ccode{bf}'s buffer,
+and \ccode{*opt\_n} is >=0. (0 would be an empty line.)
+
+\ccode{eslEOF} if there's no line (even blank).
+On EOF, \ccode{*opt\_p} is NULL and \ccode{*opt\_n} is 0.
+
+Throws \ccode{eslEMEM} if allocation fails.
+\ccode{eslESYS} if a system call such as fread() fails unexpectedly
+\ccode{eslEINCONCEIVABLE} if \ccode{bf} internal state is corrupt.
+
+
+\hypertarget{func:esl_buffer_FetchLine()}
+{\item[int esl\_buffer\_FetchLine(ESL\_BUFFER *bf, char **opt\_p, esl\_pos\_t *opt\_n)]}
+
+Get the next line from the buffer \ccode{bf}, starting from its
+current position.  Return an allocated copy of it in
+\ccode{*opt\_p}, and its length in bytes in \ccode{*opt\_n}.  Advance
+the buffer position past (one) newline, putting it on
+the next valid byte. The last line in a file does not
+need to be terminated by a newline. The returned memory is not
+NUL-terminated.
+
+If the next line is empty (solely a newline character),
+returns \ccode{eslOK}, but with \ccode{*opt\_p} as \ccode{NULL} and
+\ccode{*opt\_n} as 0.
+
+Caller is responsible for free'ing \ccode{*opt\_p}. 
+
+Because \ccode{*ret\_p} is a copy of \ccode{bf}'s internal buffer,
+caller may continue to manipulate \ccode{bf}, unlike
+\ccode{esl\_buffer\_GetLine()}.
+
+Returns \ccode{eslOK} on success.  Either \ccode{*opt\_p} is an allocated copy
+of next line and \ccode{*opt\_n} is $>0$, or \ccode{*opt\_p} is \ccode{NULL}
+and \ccode{*opt\_n} is 0 (in the case where the line is empty, 
+ 8            immediately terminated by newline, such as \verb+"\n"+.).
+
+\ccode{eslEOF} if there's no line (even blank).
+On EOF, \ccode{*opt\_p} is NULL and \ccode{*opt\_n} is 0.
+
+Throws \ccode{eslEMEM} if allocation fails.
+\ccode{eslESYS} if a system call such as fread() fails unexpectedly
+\ccode{eslEINCONCEIVABLE} if \ccode{bf} internal state is corrupt.
+
+
+\hypertarget{func:esl_buffer_FetchLineAsStr()}
+{\item[int esl\_buffer\_FetchLineAsStr(ESL\_BUFFER *bf, char **opt\_s, esl\_pos\_t *opt\_n)]}
+
+Same as \ccode{esl\_buffer\_FetchLine()} except the
+returned line is \ccode{NUL}-terminated and can be treated
+as a string.
+
+Returns \ccode{eslOK} on success.  \ccode{*opt\_p} is an allocated copy
+of next line and \ccode{*opt\_n} is >=0. (0 would be an empty line
+terminated by newline, such as \verb+\n+.)
+
+\ccode{eslEOF} if there's no line (even blank).
+On EOF, \ccode{*opt\_p} is NULL and \ccode{*opt\_n} is 0.
+
+Throws \ccode{eslEMEM} if allocation fails.
+\ccode{eslEINVAL} if an anchoring attempt is invalid
+\ccode{eslESYS} if a system call such as fread() fails unexpectedly
+\ccode{eslEINCONCEIVABLE} if \ccode{bf} internal state is corrupt.
+
+
+\hypertarget{func:esl_buffer_GetToken()}
+{\item[int esl\_buffer\_GetToken(ESL\_BUFFER *bf, const char *sep, char **opt\_tok, esl\_pos\_t *opt\_n)]}
+
+Find the next token in \ccode{bf} delimited by the separator
+characters in \ccode{sep} or newline. Return a pointer
+to that token in \ccode{*opt\_tok}, and its length in \ccode{*opt\_n}.
+A 'token' consists of one or more characters that are
+neither in \ccode{sep} nor a newline (verb+\r+ or \verb+\n+).
+
+Because the caller only gets a pointer into the buffer's
+current memory, it should not call another
+\ccode{esl\_buffer\_*} function until it's done with the token
+or made a copy of it.
+
+In detail, starting from the buffer \ccode{bf}'s current
+point; first skip past any leading characters in \ccode{sep}. If EOF
+is reached, return \ccode{eslEOF}. If the point is now on a
+newline, skip past it and return \ccode{eslEOL}. Set an anchor
+at the current point. Count how many non-separator
+characters \ccode{n} occur from the current point \ccode{p}
+(expand/refill buffer as needed), and define the token
+as \ccode{p[0..n-1]}. Skip any trailing characters in \ccode{sep}. 
+Set the point to the start of the next token (a char not
+in \ccode{sep}.) Release the anchor and return.
+
+If caller knows how many tokens it expects on each line,
+it should not include \verb+"\r\n"+ in its \ccode{sep}. This way,
+hitting a newline will cause a \ccode{eslEOL} return. The
+caller can check for expected or unexpected \ccode{EOL}'s.
+
+If the caller doesn't care how many tokens it allows per
+line, it should include \verb+"\r\n"+ in its \ccode{sep}. Now
+newlines will be skipped like any other separator
+character, and the only normal returns are \ccode{eslEOF} and
+\ccode{eslOK}.
+
+Returns \ccode{eslOK} if a token is found; \ccode{*ret\_p} points to it,
+and \ccode{*opt\_n} is its length in chars (> 0). The current
+point is at the start of the next token.
+
+\ccode{eslEOF} if the input ends before any token is found.
+Now \ccode{*ret\_p} is \ccode{NULL} and \ccode{*opt\_n} is 0. The current
+point is at EOF.
+
+\ccode{eslEOL} if a line ends before a token is found.  (This
+case only arises if *sep does not contain newline.)
+Now \ccode{*ret\_p} is \ccode{NULL} and \ccode{*opt\_n} is 0. The current
+point is at the next character following the newline.
+
+\ccode{bf->mem} may be modified and/or reallocated, if new
+input reads are required to find the entire token.
+
+Throws \ccode{eslEMEM} if an allocation fails.
+Now \ccode{*ret\_p} is \ccode{NULL} and \ccode{*opt\_n} is 0. The
+current point is undefined.
+
+
+\hypertarget{func:esl_buffer_FetchToken()}
+{\item[int esl\_buffer\_FetchToken(ESL\_BUFFER *bf, const char *sep, char **opt\_tok, esl\_pos\_t *opt\_n)]}
+
+Essentially the same as \ccode{esl\_buffer\_GetToken()}, except a
+copy of the token is made into newly allocated memory,
+and a pointer to this memory is returned in \ccode{*opt\_tok}.
+The caller is responsible for freeing the memory. 
+
+The token is raw memory, not a \ccode{NUL}-terminated string. 
+To fetch tokens as \ccode{NUL}-terminated strings, see 
+\ccode{esl\_buffer\_GetTokenAsStr()}.
+
+Returns \ccode{eslOK} if a token is found; \ccode{*ret\_p} points to it,
+and \ccode{*opt\_n} is its length in chars (> 0). The current
+point is at the start of the next token.
+
+\ccode{eslEOF} if the input ends before any token is found.
+Now \ccode{*ret\_p} is \ccode{NULL} and \ccode{*opt\_n} is 0. The current
+point is at EOF.
+
+\ccode{eslEOL} if a line ends before a token is found.  (This
+case only arises if *sep does not contain newline.)
+Now \ccode{*ret\_p} is \ccode{NULL} and \ccode{*opt\_n} is 0. The current
+point is at the next character following the newline.
+
+\ccode{bf->mem} may be modified and/or reallocated, if new
+input reads are required to find the entire token.
+
+Throws \ccode{eslEMEM} if an allocation fails.
+Now \ccode{*ret\_p} is \ccode{NULL} and \ccode{*opt\_n} is 0. The
+current point is undefined.
+
+
+\hypertarget{func:esl_buffer_FetchTokenAsStr()}
+{\item[int esl\_buffer\_FetchTokenAsStr(ESL\_BUFFER *bf, const char *sep, char **opt\_tok, esl\_pos\_t *opt\_n)]}
+
+Essentially the same as \ccode{esl\_buffer\_FetchToken()} 
+except the copied token is \verb+\0+-terminated so it
+can be treated as a string.
+
+Returns \ccode{eslOK} if a token is found; \ccode{*ret\_p} points to it,
+and \ccode{*opt\_n} is its length in chars (> 0). The current
+point is at the start of the next token.
+
+\ccode{eslEOF} if the input ends before any token is found.
+Now \ccode{*ret\_p} is \ccode{NULL} and \ccode{*opt\_n} is 0. The current
+point is at EOF.
+
+\ccode{eslEOL} if a line ends before a token is found.  (This
+case only arises if *sep does not contain newline.)
+Now \ccode{*ret\_p} is \ccode{NULL} and \ccode{*opt\_n} is 0. The current
+point is at the next character following the newline.
+
+\ccode{bf->mem} may be modified and/or reallocated, if new
+input reads are required to find the entire token.
+
+Throws \ccode{eslEMEM} if an allocation fails.
+Now \ccode{*ret\_p} is \ccode{NULL} and \ccode{*opt\_n} is 0. The
+current point is undefined.
+
+
+\hypertarget{func:esl_buffer_Read()}
+{\item[int esl\_buffer\_Read(ESL\_BUFFER *bf, size\_t nbytes, void *p)]}
+
+Given an input buffer \ccode{bf}, read exactly \ccode{nbytes}
+characters into memory \ccode{p} provided by the caller.
+
+Suitable for copying known-width scalars from
+binary files, as in:
+\begin{cchunk}
+char c;
+int  n;
+esl_buffer_Read(bf, sizeof(char), c);
+esl_buffer_Read(bf, sizeof(int),  n);
+\end{cchunk}
+
+Returns \ccode{eslOK} on success; \ccode{p} contains exactly \ccode{nbytes}
+of data from \ccode{bf}, and the point is advanced by \ccode{nbytes}.
+
+\ccode{eslEOF} if less than \ccode{nbytes} characters remain 
+in \ccode{bf}. Point is unchanged.
+
+Throws \ccode{eslEMEM} if an allocation fails.
+\ccode{eslESYS} if an fread() fails mysteriously.
+\ccode{eslEINCONCEIVABLE} if internal state of \ccode{bf} is corrupted.
+
+
+\end{sreapi}
+

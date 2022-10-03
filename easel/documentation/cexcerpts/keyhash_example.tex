@@ -1,0 +1,48 @@
+\begin{cchunk}
+/* gcc -g -Wall -o keyhash_example -I. -DeslKEYHASH_EXAMPLE esl_keyhash.c easel.c 
+ * ./example /usr/share/dict/words /usr/share/dict/words
+ */
+#include <stdio.h>
+#include "easel.h"
+#include "esl_keyhash.h"
+
+int
+main(int argc, char **argv)
+{
+  ESL_KEYHASH *h   = esl_keyhash_Create();
+  FILE        *fp;
+  char         buf[256];
+  char        *s, *tok;
+  int          idx;
+  int          nstored, nsearched, nshared;
+
+  /* Read/store keys from file 1. */
+  if ((fp = fopen(argv[1], "r")) == NULL) esl_fatal("couldn't open %s\n", argv[1]);
+  nstored = 0;
+  while (fgets(buf, 256, fp) != NULL)
+    {
+      s = buf;
+      esl_strtok(&s, " \t\r\n", &tok);
+      esl_keyhash_Store(h, tok, -1, &idx);
+      nstored++;
+    }
+  fclose(fp);
+  printf("Stored %d keys.\n", nstored);
+
+  /* Look up keys from file 2. */
+  if ((fp = fopen(argv[2], "r")) == NULL) esl_fatal("couldn't open %s\n", argv[1]);
+  nsearched = nshared = 0;
+  while (fgets(buf, 256, fp) != NULL)
+    {
+      s = buf;
+      esl_strtok(&s, " \t\r\n", &tok);
+      if (esl_keyhash_Lookup(h, tok, -1, &idx) == eslOK) nshared++;
+      nsearched++;
+    }
+  fclose(fp);
+  printf("Looked up %d keys.\n", nsearched);
+  printf("In common: %d keys.\n", nshared);
+  esl_keyhash_Destroy(h);
+  return 0;
+}
+\end{cchunk}

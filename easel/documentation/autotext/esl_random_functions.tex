@@ -1,0 +1,339 @@
+\begin{sreapi}
+\hypertarget{func:esl_randomness_Create()}
+{\item[ESL\_RANDOMNESS * esl\_randomness\_Create(uint32\_t seed)]}
+
+Create a random number generator using
+a given random seed. 
+
+The default random number generator uses the Mersenne
+Twister MT19937 algorithm \citep{Matsumoto98}.  It has a
+period of $2^{19937}-1$, and equidistribution over
+$2^{32}$ values.
+
+If \ccode{seed} is $>0$, the random number generator is
+reproducibly initialized with that seed.  Two RNGs
+created with the same nonzero seed will give exactly the
+same stream of pseudorandom numbers. This allows you to
+make reproducible stochastic simulations, for example.
+
+If \ccode{seed} is 0, an arbitrary seed is chosen.
+Internally, this comes from hashing together the current
+\ccode{time()}, \ccode{clock()}, and process id.  Two RNGs created
+with \ccode{seed}=0 probably (but not assuredly) give
+different streams of pseudorandom numbers. The true seed
+can be retrieved from the \ccode{ESL\_RANDOMNESS} object using
+\ccode{esl\_randomness\_GetSeed()}.  The strategy used for
+choosing the arbitrary seed is predictable; it should
+not be considered cryptographically secure.
+
+Returns an initialized \ccode{ESL\_RANDOMNESS *} on success.
+Caller free's with \ccode{esl\_randomness\_Destroy()}.
+
+Throws \ccode{NULL} on failure.
+
+
+
+\hypertarget{func:esl_randomness_CreateFast()}
+{\item[ESL\_RANDOMNESS * esl\_randomness\_CreateFast(uint32\_t seed)]}
+
+Same as \ccode{esl\_randomness\_Create()}, except that a simple
+linear congruential generator (LCG) will be used.
+This is a $(a=69069, c=1)$ LCG, with a period of
+$2^{32}$. 
+
+This is a low quality RNG. It fails several standard
+NIST statistical tests. Successive samples from an LCG
+are correlated, and it has a relatively short period. IT
+SHOULD NOT BE USED (period). It is present in Easel for
+legacy reasons. It used to be substantially faster than
+our high quality RNG, but now our default Mersenne
+Twister is plenty fast. We have regression and unit
+tests that use the LCG and depend on a fixed seed and a
+particular pseudorandom number sequence; they would have
+to be re-studied carefully to upgrade them to a
+different RNG.
+
+Here's an example of how serial correlation arises in an
+LCG, and how it can lead to serious (and difficult to
+diagnose) failure in a Monte Carlo simulation.  An LCG
+calculates $x_{i+1} = ax_i + c$. Suppose $x_i$ is small:
+in the range 0..6000, say, as a specific example. Now
+$x_{i+1}$ cannot be larger than 4.1e8, for an LCG with
+$a=69069$,$c=1$. So if you take a sample and test
+whether it is $< 1e-6$ (say), the next sample will be in
+a range of about 0..0.1, rather than being uniform on
+0..1.
+
+Returns an initialized \ccode{ESL\_RANDOMNESS *} on success.
+Caller free's with \ccode{esl\_randomness\_Destroy()}.
+
+Throws \ccode{NULL} on failure.
+
+
+
+\hypertarget{func:esl_randomness_CreateTimeseeded()}
+{\item[ESL\_RANDOMNESS * esl\_randomness\_CreateTimeseeded(void)]}
+
+Like \ccode{esl\_randomness\_Create()}, but it initializes the
+the random number generator using a POSIX \ccode{time()} call 
+(number of seconds since the POSIX epoch).
+
+This function is deprecated. Use 
+\ccode{esl\_randomness\_Create(0)} instead.
+
+Returns an initialized \ccode{ESL\_RANDOMNESS *} on success.
+Caller free's with \ccode{esl\_randomness\_Destroy()}.
+
+Throws \ccode{NULL} on failure.
+
+
+
+\hypertarget{func:esl_randomness_Init()}
+{\item[int esl\_randomness\_Init(ESL\_RANDOMNESS *r, uint32\_t seed)]}
+
+Reset and reinitialize an existing \ccode{ESL\_RANDOMNESS}
+object with a new seed. 
+
+Sometimes it's useful to reseed an RNG to guarantee a
+particular reproducible series of pseudorandom numbers
+at an arbitrary point in a program; HMMER does this, for
+example, to guarantee the same results from the same
+HMM/sequence comparison regardless of where in a search
+the HMM or sequence occurs.
+
+Returns \ccode{eslOK} on success.
+
+
+
+\hypertarget{func:esl_randomness_GetSeed()}
+{\item[uint32\_t esl\_randomness\_GetSeed(const ESL\_RANDOMNESS *r)]}
+
+Return the value of the seed. 
+
+
+\hypertarget{func:esl_randomness_Destroy()}
+{\item[void esl\_randomness\_Destroy(ESL\_RANDOMNESS *r)]}
+
+Frees an \ccode{ESL\_RANDOMNESS} object.
+
+
+\hypertarget{func:esl_random()}
+{\item[double esl\_random(ESL\_RANDOMNESS *r)]}
+
+Returns a uniform deviate x, $0.0 \leq x < 1.0$, given
+RNG \ccode{r}.
+
+If you cast the return value to float, the [0,1) interval
+guarantee is lost because values close to 1 will round to
+1.0.
+
+Returns a uniformly distribute random deviate on interval
+$0.0 \leq x < 1.0$.
+
+
+\hypertarget{func:esl_random_uint32()}
+{\item[uint32\_t esl\_random\_uint32(ESL\_RANDOMNESS *r)]}
+
+Returns a uniform deviate x, a 32-bit unsigned
+integer $0 \leq x < 2^{32}$, given RNG \ccode{r}.
+
+
+\hypertarget{func:esl_rnd_mix3()}
+{\item[uint32\_t esl\_rnd\_mix3(uint32\_t a, uint32\_t b, uint32\_t c)]}
+
+This is Bob Jenkin's \ccode{mix()}. Given \ccode{a,b,c},
+generate a number that's generated reasonably
+uniformly on $[0,2^{32}-1]$ even for closely
+spaced choices of $a,b,c$. 
+
+
+\hypertarget{func:esl_rnd_UniformPositive()}
+{\item[double esl\_rnd\_UniformPositive(ESL\_RANDOMNESS *r)]}
+
+Same as \ccode{esl\_random()}, but assure $0 < x < 1$;
+(positive uniform deviate).
+
+
+\hypertarget{func:esl_rnd_Gaussian()}
+{\item[double esl\_rnd\_Gaussian(ESL\_RANDOMNESS *r, double mean, double stddev)]}
+
+Pick a Gaussian-distributed random variable
+with a given \ccode{mean} and standard deviation \ccode{stddev}, and
+return it. 
+
+Implementation is derived from the public domain
+RANLIB.c \ccode{gennor()} function, written by Barry W. Brown
+and James Lovato (M.D. Anderson Cancer Center, Texas
+USA) using the method described in
+\citep{AhrensDieter73}.
+
+Original algorithm said to use uniform deviates on [0,1)
+interval (i.e. \ccode{esl\_random()}), but this appears to be
+wrong.  Use uniform deviates on (0,1) interval instead
+(i.e., \ccode{esl\_rnd\_UniformPositive()}). RANLIB, GNU Octave
+have made this alteration, possibly inadvertently.
+[xref cryptogenomicon post, 13 Oct 2014].
+
+
+
+\hypertarget{func:esl_rnd_Gamma()}
+{\item[double esl\_rnd\_Gamma(ESL\_RANDOMNESS *r, double a)]}
+
+Return a random deviate distributed as Gamma(a, 1.)
+\citep[pp. 133--134]{Knu-81a}.
+
+The implementation follows not only Knuth \citep{Knu-81a},
+but also relied on examination of the implementation in
+the GNU Scientific Library (libgsl) \citep{Galassi06}.
+
+
+
+\hypertarget{func:esl_rnd_Dirichlet()}
+{\item[int esl\_rnd\_Dirichlet(ESL\_RANDOMNESS *rng, const double *alpha, int K, double *p)]}
+
+Using generator \ccode{rng}, sample a Dirichlet-distributed
+probabilty vector \ccode{p} of \ccode{K} elements, using Dirichlet
+parameters \ccode{alpha} (also of \ccode{K} elements). 
+
+Caller provides the allocated space for \ccode{p}.
+
+\ccode{alpha} is optional. If it isn't provided (i.e. is
+\ccode{NULL}), sample \ccode{p} uniformly. (That is, use \ccode{alpha[i] =
+1.} for all i=0..K-1.)
+
+This routine is redundant with \ccode{esl\_dirichlet\_DSample()}
+and \ccode{esl\_dirichlet\_DSampleUniform()} in the dirichlet
+module. Provided here because there's cases where we
+just want to sample a probability vector without
+introducing a dependency on all the stats/dirichlet code
+in Easel.
+
+Returns \ccode{eslOK} on success, and \ccode{p} is a sampled probability vector.
+
+
+\hypertarget{func:esl_rnd_Deal()}
+{\item[int esl\_rnd\_Deal(ESL\_RANDOMNESS *rng, int m, int n, int *deal)]}
+
+Obtain a random sequential sample of \ccode{m} integers without
+replacement from \ccode{n} possible ones, like dealing a hand
+of m=5 cards from a deck of n=52 possible cards with
+cards numbered \ccode{0..n-1}. Caller provides allocated space
+\ccode{deal}, allocated for at least \ccode{m} elements. Return the
+sample in \ccode{deal}, in sorted order (smallest to largest).
+
+Uses the selection sampling algorithm [Knuth, 3.4.2],
+which is O(n) time. For more impressive O(m)
+performance, see \ccode{esl\_rand64\_Deal()}.
+
+As a special case, if m = 0 (for whatever reason,
+probably an edge-case-exercising unit test), do
+nothing. \ccode{deal} is untouched, and can even be \ccode{NULL}.
+
+Returns \ccode{eslOK} on success, and the sample of \ccode{m} integers
+is in \ccode{deal}.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_rnd_DChoose()}
+{\item[int esl\_rnd\_DChoose(ESL\_RANDOMNESS *r, const double *p, int N)]}
+
+Make a random choice from a normalized discrete
+distribution \ccode{p} of \ccode{N} elements, where \ccode{p}
+is double-precision. Returns the index of the
+selected element, $0..N-1$.
+
+\ccode{p} must be a normalized probability distribution
+(i.e. must sum to one). Sampling distribution is
+undefined otherwise: that is, a choice will always
+be returned, but it might be an arbitrary one.
+
+All $p_i$ must be $>$ \ccode{DBL\_EPSILON} in order to 
+have a non-zero probability of being sampled.
+
+\ccode{esl\_rnd\_FChoose()} is the same, but for floats in \ccode{p},
+and all $p_i$ must be $>$ \ccode{FLT\_EPSILON}.
+
+
+\hypertarget{func:esl_rnd_DChooseCDF()}
+{\item[int esl\_rnd\_DChooseCDF(ESL\_RANDOMNESS *r, const double *cdf, int N)]}
+
+Given a random number generator \ccode{r} and a cumulative
+multinomial distribution \ccode{cdf[0..N-1]}, sample an element
+\ccode{0..N-1} from that distribution. Return the index \ccode{0..N-1}.
+
+Caller should be sure that \ccode{cdf[0..N-1]} is indeed a
+cumulative multinomial distribution -- in particular, that
+\ccode{cdf[N-1]} is tolerably close to 1.0 (within roundoff error).
+
+When sampling many times from the same multinomial
+distribution \ccode{p}, it will generally be faster to
+calculate the CDF once using \ccode{esl\_vec\_DCDF(p, N, cdf)},
+then sampling many times from the CDF with
+\ccode{esl\_rnd\_DChooseCDF(r, cdf, N)}, as opposed to calling
+\ccode{esl\_rnd\_DChoose(r, p, N)} many times, because
+\ccode{esl\_rnd\_DChoose()} has to calculated the CDF before
+sampling. This also gives you a bit more control over
+error detection: you can make sure that the CDF is ok (p
+does sum to ~1.0) before doing a lot of sampling from
+it.
+
+\ccode{esl\_rnd\_FChooseCDF()} is the same, but for
+a single-precision float \ccode{cdf}.
+
+Returns index 0..N-1 of the randomly sampled choice from \ccode{cdf}.
+
+
+
+\hypertarget{func:esl_rnd_mem()}
+{\item[int esl\_rnd\_mem(ESL\_RANDOMNESS *rng, void *buf, int n)]}
+
+Write \ccode{n} bytes of random garbage into buffer
+\ccode{buf}, by uniform sampling of values 0..255,
+using generator \ccode{rng}.
+
+Used in unit tests that are reusing memory, and that
+want to make sure that there's no favorable side effects
+from that reuse.
+
+
+\hypertarget{func:esl_rnd_floatstring()}
+{\item[int esl\_rnd\_floatstring(ESL\_RANDOMNESS *rng, char *s)]}
+
+Generate a string decimal representation of a random 
+floating point number in \ccode{s}, which is space provided
+by the caller, allocated for at least 20 characters.
+
+The string representation of the number consists of:
+* an optional - sign  (50%)
+* a 1-6 digit integer part; (1/7 '0'; else 1/7 for each len, [1-9][0-9]* uniformly)
+* an optional fractional part (50%), consisting of:
+- '.'
+- a 1-7 digit fractional part; 1/7 for each len, [0-9]* uniformly
+* an optional exponent (50%), consisting of:
+- 'e'
+-  -20..e20, 1/41 uniformly.
+* '\0' terminator.
+
+Maximum length is 1+6+1+7+4+1 = 20.
+
+The string representation is an intersection of what's
+valid for \ccode{strtod()}, JSON number values, and C. JSON
+number values do not permit numbers like "1."  (a
+decimal part, decimal point, no fractional part), nor
+hexadecimal representations, nor leading or trailing
+whitespace.
+
+The generated number does not attempt to exercise
+extreme values. The absolute magnitude of non-zero
+numbers ranges from 0.0000001e-20..999999e20 (1e-27 to
+~1e27), well within IEEE754 FLT_MIN..FLT_MAX
+range. Special values "infinity" and "nan" are not
+generated.  Zero can be represented by many different
+patterns \ccode{-?0.0+(e-?..)?}.
+
+Returns \ccode{eslOK} on success.
+
+
+\end{sreapi}
+

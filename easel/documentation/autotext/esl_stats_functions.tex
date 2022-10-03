@@ -1,0 +1,179 @@
+\begin{sreapi}
+\hypertarget{func:esl_stats_DMean()}
+{\item[int esl\_stats\_DMean(const double *x, int n, double *opt\_mean, double *opt\_var)]}
+
+Calculates the sample mean and $s^2$, the unbiased
+estimator of the population variance, for a
+sample of \ccode{n} numbers \ccode{x[0]..x[n-1]}, and optionally
+returns either or both through \ccode{ret\_mean} and
+\ccode{ret\_var}.
+
+\ccode{esl\_stats\_FMean()} and \ccode{esl\_stats\_IMean()} do the same,
+for float and integer vectors.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_stats_LogGamma()}
+{\item[int esl\_stats\_LogGamma(double x, double *ret\_answer)]}
+
+Returns natural log of $\Gamma(x)$, for $x > 0$.
+
+Returns Put the answer in \ccode{ret\_answer}; returns \ccode{eslOK}.
+
+Throws \ccode{eslERANGE} if $x <= 0$.
+
+
+\hypertarget{func:esl_stats_Psi()}
+{\item[int esl\_stats\_Psi(double x, double *ret\_answer)]}
+
+Computes $\Psi(x)$ (the "digamma" function), which is
+the derivative of log of the Gamma function:
+$d/dx \log \Gamma(x) = \frac{\Gamma'(x)}{\Gamma(x)} = \Psi(x)$.
+Argument $x$ is $> 0$. 
+
+This is J.M. Bernardo's "Algorithm AS103",
+Appl. Stat. 25:315-317 (1976).  
+
+
+\hypertarget{func:esl_stats_IncompleteGamma()}
+{\item[int esl\_stats\_IncompleteGamma(double a, double x, double *ret\_pax, double *ret\_qax)]}
+
+Returns $P(a,x)$ and $Q(a,x)$ where:
+
+\begin{eqnarray*}
+P(a,x) & = & \frac{1}{\Gamma(a)} \int_{0}^{x} t^{a-1} e^{-t} dt \\
+& = & \frac{\gamma(a,x)}{\Gamma(a)} \\
+Q(a,x) & = & \frac{1}{\Gamma(a)} \int_{x}^{\infty} t^{a-1} e^{-t} dt\\
+& = & 1 - P(a,x) \\
+\end{eqnarray*}
+
+$P(a,x)$ is the CDF of a gamma density with $\lambda = 1$,
+and $Q(a,x)$ is the survival function.
+
+For $x \simeq 0$, $P(a,x) \simeq 0$ and $Q(a,x) \simeq 1$; and
+$P(a,x)$ is less prone to roundoff error. 
+
+The opposite is the case for large $x >> a$, where
+$P(a,x) \simeq 1$ and $Q(a,x) \simeq 0$; there, $Q(a,x)$ is
+less prone to roundoff error.
+
+Throws \ccode{eslERANGE} if \ccode{a} or \ccode{x} is out of accepted range.
+\ccode{eslENOHALT} if approximation fails to converge.
+
+
+\hypertarget{func:esl_stats_erfc()}
+{\item[double esl\_stats\_erfc(double x)]}
+
+Calculate and return the complementary error function, 
+erfc(x).
+
+erfc(x) is mandated by the ANSI C99 standard but that
+doesn't mean it's available on supposedly modern systems
+(looking at you here, Microsoft).
+
+Used for cumulative distribution function calculations
+for the normal (Gaussian) distribution. See \ccode{esl\_normal}
+module.
+
+erfc(-inf) = 2.0
+erfc(0)    = 1.0
+erfc(inf)  = 0.0
+erfc(NaN)  = NaN
+
+Returns erfc(x)
+
+Throws (no abnormal error conditions)
+
+
+
+\hypertarget{func:esl_stats_GTest()}
+{\item[int esl\_stats\_GTest(int ca, int na, int cb, int nb, double *ret\_G, double *ret\_P)]}
+
+In experiment a, we've drawn \ccode{ca} successes in \ccode{na} total
+trials; in experiment b, we've drawn \ccode{cb} successes in
+\ccode{nb} total trials. Are the counts different enough to
+conclude that the two experiments are different? The
+null hypothesis is that the successes in both experiments
+were drawn from the same binomial distribution with
+per-trial probability $p$. The tested hypothesis is that
+experiments a,b have different binomial probabilities
+$p_a,p_b$. The G-test is a log-likelihood-ratio statistic,
+assuming maximum likelihood values for $p,p_a,p_b$. 
+$2G$ is distributed approximately as $X^2(1)$,
+%"X" is "Chi"
+which we use to calculate a P-value for the G statistic.
+
+Returns \ccode{eslOK} on success.
+
+Throws (no abnormal error conditions)
+
+
+
+\hypertarget{func:esl_stats_ChiSquaredTest()}
+{\item[int esl\_stats\_ChiSquaredTest(int v, double x, double *ret\_answer)]}
+
+Calculate the probability that a chi-squared statistic
+with \ccode{v} degrees of freedom would exceed the observed
+chi-squared value \ccode{x}; return it in \ccode{ret\_answer}. If
+this probability is less than some small threshold (say,
+0.05 or 0.01), then we may reject the hypothesis we're
+testing.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslERANGE} if \ccode{v} or \ccode{x} are out of valid range.
+\ccode{eslENOHALT} if iterative calculation fails.
+
+
+\hypertarget{func:esl_stats_LinearRegression()}
+{\item[int esl\_stats\_LinearRegression(const double *x, const double *y, const double *sigma, int n,
+			   double *opt\_a,       double *opt\_b,
+			   double *opt\_sigma\_a, double *opt\_sigma\_b, double *opt\_cov\_ab,
+			   double *opt\_cc,      double *opt\_Q)]}
+
+Fit \ccode{n} points \ccode{x[i]}, \ccode{y[i]} to a straight line
+$y = a + bx$ by linear regression. 
+
+The $x_i$ are taken to be known, and the $y_i$ are taken
+to be observed quantities associated with a sampling
+error $\sigma_i$. If known, the standard deviations
+$\sigma_i$ for $y_i$ are provided in the \ccode{sigma} array.
+If they are unknown, pass \ccode{sigma = NULL}, and the
+routine will proceed with the assumption that $\sigma_i
+= 1$ for all $i$.
+
+The maximum likelihood estimates for $a$ and $b$ are
+optionally returned in \ccode{opt\_a} and \ccode{opt\_b}.
+
+The estimated standard deviations of $a$ and $b$ and
+their estimated covariance are optionally returned in
+\ccode{opt\_sigma\_a}, \ccode{opt\_sigma\_b}, and \ccode{opt\_cov\_ab}.
+
+The Pearson correlation coefficient is optionally
+returned in \ccode{opt\_cc}. 
+
+The $\chi^2$ P-value for the regression fit is
+optionally returned in \ccode{opt\_Q}. This P-value may only be
+obtained when the $\sigma_i$ are known. If \ccode{sigma} is
+passed as \ccode{NULL} and \ccode{opt\_Q} is requested, \ccode{*opt\_Q} is
+set to 1.0.
+
+This routine follows the description and algorithm in
+\citep[pp.661-666]{Press93}.
+
+\ccode{n} must be greater than 2; at least two x[i] must
+differ; and if \ccode{sigma} is provided, all \ccode{sigma[i]} must
+be $>0$. If any of these conditions isn't met, the
+routine throws \ccode{eslEINVAL}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error;
+\ccode{eslEINVAL} if a contract condition isn't met;
+\ccode{eslENORESULT} if the chi-squared test fails.
+In these cases, all optional return values are set to 0.
+
+
+\end{sreapi}
+

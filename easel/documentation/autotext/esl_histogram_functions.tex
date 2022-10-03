@@ -1,0 +1,477 @@
+\begin{sreapi}
+\hypertarget{func:esl_histogram_Create()}
+{\item[ESL\_HISTOGRAM * esl\_histogram\_Create(double bmin, double bmax, double w)]}
+
+Creates and returns a new histogram object, initially
+allocated to count values $>$ \ccode{bmin} and $<=$ \ccode{bmax} into
+bins of width \ccode{w}. Thus, a total of \ccode{bmax}-\ccode{bmin}/\ccode{w} bins
+are initially created. 
+
+The lower bound \ccode{bmin} and the width \ccode{w} permanently
+determine the offset and width of the binning, but not
+the range.  For example, \ccode{esl\_histogram\_Create(-100,
+100, 0.5)} would initialize the object to collect scores into
+400 bins $[-100< x \leq -99.5],[-99.5 < x \leq
+-99.0]...[99.5 <x \leq 100.0]$.  Aside from this, the
+range specified by the bounds \ccode{bmin} and \ccode{bmax} only
+needs to be an initial guess. The histogram object will
+reallocate itself dynamically as needed to accommodate
+scores that exceed current bounds.
+
+You can be sloppy about \ccode{bmax}; it does not have to
+exactly match a bin upper bound. The initial allocation
+is for all full-width bins with upper bounds $\leq
+bmax$.
+
+\ccode{esl\_histogram\_Create()} creates a simplified histogram
+object that collates only the "display" histogram. For
+a more complex object that also keeps the raw data samples,
+better suited for fitting distributions and goodness-of-fit
+testing, use \ccode{esl\_histogram\_CreateFull()}.
+
+There is currently no way to alter where the equals sign
+is, in setting the bin bounds: that is, you can't make bins
+that have \ccode{bmin} $\leq x$ and $x <$ \ccode{bmax}, alas.
+
+
+Returns ptr to new \ccode{ESL\_HISTOGRAM} object, which caller is responsible
+for free'ing with \ccode{esl\_histogram\_Destroy()}.
+
+Throws \ccode{NULL} on allocation failure.
+
+
+\hypertarget{func:esl_histogram_CreateFull()}
+{\item[ESL\_HISTOGRAM * esl\_histogram\_CreateFull(double bmin, double bmax, double w)]}
+
+Alternative form of \ccode{esl\_histogram\_Create()} that 
+creates a more complex histogram that will contain not just the 
+display histogram, but also keeps track of all
+the raw sample values. Having a complete vector of raw
+samples improves distribution-fitting and goodness-of-fit 
+tests, but will consume more memory. 
+
+
+\hypertarget{func:esl_histogram_Destroy()}
+{\item[void esl\_histogram\_Destroy(ESL\_HISTOGRAM *h)]}
+
+Frees an \ccode{ESL\_HISTOGRAM} object \ccode{h}.
+
+
+\hypertarget{func:esl_histogram_Score2Bin()}
+{\item[int esl\_histogram\_Score2Bin(ESL\_HISTOGRAM *h, double x, int *ret\_b)]}
+
+For a real-valued \ccode{x}, figure out what bin it would
+go into in the histogram \ccode{h}; return this value in
+\ccode{*ret\_b}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslERANGE} if bin \ccode{b} would exceed the range of
+an integer; for instance, if \ccode{x} isn't finite.
+
+
+
+\hypertarget{func:esl_histogram_Add()}
+{\item[int esl\_histogram\_Add(ESL\_HISTOGRAM *h, double x)]}
+
+Adds score \ccode{x} to a histogram \ccode{h}.
+
+The histogram will be automatically reallocated as
+needed if the score is smaller or larger than the
+current allocated bounds.  
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on reallocation failure.
+
+\ccode{eslERANGE} if \ccode{x} is beyond the reasonable range for
+the histogram to store -- either because it isn't finite,
+or because the histogram would need to allocate a number
+of bins that exceeds \ccode{INT\_MAX}.
+
+Throws \ccode{eslEINVAL} for cases where something has been done
+to the histogram that requires it to be 'finished', and
+adding more data is prohibited; for example, 
+if tail or censoring information has already been set.
+On either failure, initial state of \ccode{h} is preserved.
+
+
+\hypertarget{func:esl_histogram_DeclareCensoring()}
+{\item[int esl\_histogram\_DeclareCensoring(ESL\_HISTOGRAM *h, int z, double phi)]}
+
+Declare that the dataset collected in \ccode{h} is known to be a
+censored distribution, where \ccode{z} samples were unobserved because
+they had values $\leq$ some threshold \ccode{phi} ($\phi$).
+
+No more data can be added to the histogram with \ccode{\_Add()}
+after censoring information has been set.
+
+This function is for "true" censored datasets, where
+the histogram truly contains no observed points
+$x \leq \phi$, and the number that were censored is known
+to be \ccode{z}. 
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if you try to set \ccode{phi} to a value that is
+greater than the minimum \ccode{x} stored in the histogram.
+
+
+\hypertarget{func:esl_histogram_DeclareRounding()}
+{\item[int esl\_histogram\_DeclareRounding(ESL\_HISTOGRAM *h)]}
+
+Declare that the data sample values in the histogram \ccode{h}
+are rounded off. Ideally, your bins in \ccode{h} should exactly 
+match the rounding procedure. This raises a flag that
+binned parameter fitting routines will use when they set
+an origin, using the lower bound of the bin instead of
+the lowest raw value in the bin.
+
+
+\hypertarget{func:esl_histogram_SetTail()}
+{\item[int esl\_histogram\_SetTail(ESL\_HISTOGRAM *h, double phi, double *ret\_newmass)]}
+
+Suggest a threshold \ccode{phi} to split a histogram \ccode{h}
+into "unobserved" data (values $\leq \phi$) and "observed" 
+data (values $> \phi$). 
+
+The suggested \ccode{phi} is revised downwards to a $\phi$ at the next 
+bin lower bound, because operations on binned data in \ccode{h}
+need to know unambiguously whether all the data in a given bin
+will be counted as observed or unobserved. 
+
+The probability mass that is in the resulting right tail
+is optionally returned in \ccode{ret\_newmass}. You need to know
+this number if you're fitting a distribution solely to the
+tail (an exponential tail, for example).
+
+Any data point $x_i \leq \phi$ is then considered to be
+in a censored (unobserved) region for purposes of parameter
+fitting, calculating expected binned counts,
+and binned goodness-of-fit tests. 
+
+No more data can be added to the histogram after
+censoring information has been set.
+
+This function defines a "virtual" left-censoring: the
+histogram actually contains complete data, but appropriate
+flags are set to demarcate the "observed" data in the right
+tail.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslERANGE} if \ccode{phi} is an unreasonable value that
+can't be converted to an integer bin value.
+
+
+\hypertarget{func:esl_histogram_SetTailByMass()}
+{\item[int esl\_histogram\_SetTailByMass(ESL\_HISTOGRAM *h, double pmass, double *ret\_newmass)]}
+
+Given a histogram \ccode{h} (with or without raw data samples),
+find a cutoff score that at least fraction \ccode{pmass} of the samples
+exceed. This threshold is stored internally in the histogram
+as \ccode{h->phi}. The number of "virtually censored" samples (to the 
+left, with scores $\leq \phi$) is stored internally in \ccode{h->z}.
+
+The identified cutoff score must be a lower bound for some bin
+(bins can't be partially censored). The censored mass
+will thus usually be a bit greater than \ccode{pmass}, as the
+routine will find the highest satisfactory \ccode{h->phi}. The
+narrower the bin widths, the more accurately the routine
+will be able to satisfy the requested \ccode{frac}. The actual
+probability mass in the right tail is optionally returned
+in \ccode{ret\_newmass}. You need to know this number if you're 
+fitting a distribution solely to the tail (an exponential tail,
+for example). It is safe for \ccode{ret\_newmass} to point at 
+\ccode{pmass}, in which case the suggested \ccode{pmass} will be overwritten
+with the actual mass upon return.
+
+This function defines that the binned data will be
+fitted either as a tail, or as a (virtually) left-censored dataset.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_histogram_GetRank()}
+{\item[int esl\_histogram\_GetRank(ESL\_HISTOGRAM *h, int rank, double *ret\_x)]}
+
+Retrieve the \ccode{rank}'th highest score from a 
+full histogram \ccode{h}. \ccode{rank} is \ccode{1..n}, for
+\ccode{n} total samples in the histogram; return it through
+\ccode{ret\_x}.
+
+If the raw scores aren't sorted, they are sorted
+first (an $N \log N$ operation).
+
+This can be called at any time, even during data
+collection, to see the current \ccode{rank}'th highest score.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if the histogram is display-only,
+or if \ccode{rank} isn't in the range 1..n.
+
+
+\hypertarget{func:esl_histogram_GetData()}
+{\item[int esl\_histogram\_GetData(ESL\_HISTOGRAM *h, double **ret\_x, int *ret\_n)]}
+
+Retrieve the raw data values from the histogram \ccode{h}.
+Return them in the vector \ccode{ret\_x}, and the number
+of values in \ccode{ret\_n}. The values are indexed \ccode{[0..n-1]},
+from smallest to largest (\ccode{x[n-1]} is the high score).
+
+\ccode{ret\_x} is a pointer to internal memory in the histogram \ccode{h}.
+The histogram \ccode{h} is still responsible for that storage;
+its memory will be free'd when you call
+\ccode{esl\_histogram\_Destroy()}.
+
+You can only call this after you have finished collecting
+all the data. Subsequent calls to \ccode{esl\_histogram\_Add()}
+will fail.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if the histogram \ccode{h} is not a full histogram.
+
+
+\hypertarget{func:esl_histogram_GetTail()}
+{\item[int esl\_histogram\_GetTail(ESL\_HISTOGRAM *h, double phi, 
+		      double **ret\_x, int *ret\_n, int *ret\_z)]}
+
+Given a full histogram \ccode{h}, retrieve all data values 
+above the threshold \ccode{phi} in the right (high scoring) 
+tail, as a ptr \ccode{ret\_x} to an array of \ccode{ret\_n} values 
+indexed \ccode{[0..n-1]} from lowest to highest score. 
+Optionally, it also returns the number of values in 
+rest of the histogram in \ccode{ret\_z};
+this number is useful if you are going to fit
+the tail as a left-censored distribution.
+
+The test is strictly greater than \ccode{phi}, not greater
+than or equal to.
+
+\ccode{ret\_x} is a pointer to internal memory in the histogram \ccode{h}.
+The histogram \ccode{h} is still responsible for that storage;
+its memory will be free'd when you call 
+\ccode{esl\_histogram\_Destroy()}.
+
+You can only call this after you have finished collecting
+all the data. Subsequent calls to \ccode{esl\_histogram\_Add()}
+will fail.             
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if the histogram is not a full histogram.
+
+
+\hypertarget{func:esl_histogram_GetTailByMass()}
+{\item[int esl\_histogram\_GetTailByMass(ESL\_HISTOGRAM *h, double pmass,
+			    double **ret\_x, int *ret\_n, int *ret\_z)]}
+
+Given a full histogram \ccode{h}, retrieve the data values in
+the right (high scoring) tail, as a pointer \ccode{ret\_x}
+to an array of \ccode{ret\_n} values indexed \ccode{[0..n-1]} from
+lowest to highest score. The tail is defined by a
+given mass fraction threshold \ccode{pmass}; the mass in the returned
+tail is $\leq$ this threshold. \ccode{pmass} is a probability,
+so it must be $\geq 0$ and $\leq 1$.
+
+Optionally, the number of values in the rest of the
+histogram can be returned in \ccode{ret\_z}. This is useful
+if you are going to fit the tail as a left-censored
+distribution.
+
+\ccode{ret\_x} is a pointer to internal memory in \ccode{h}. 
+The histogram \ccode{h} remains responsible for its storage,
+which will be free'd when you call \ccode{esl\_histogram\_Destroy()}.
+As a consequence, you can only call 
+\ccode{esl\_histogram\_GetTailByMass()} after you have finished
+collecting data. Subsequent calls to \ccode{esl\_histogram\_Add()}
+will fail.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if the histogram is not a full histogram, 
+or \ccode{pmass} is not a probability.
+
+
+\hypertarget{func:esl_histogram_SetExpect()}
+{\item[int esl\_histogram\_SetExpect(ESL\_HISTOGRAM *h, 
+			double (*cdf)(double x, void *params), void *params)]}
+
+Given a histogram \ccode{h} containing some number of empirically
+observed binned counts, and a pointer to a function \ccode{(*cdf)()}
+that describes the expected cumulative distribution function 
+(CDF) for the complete data, conditional on some parameters 
+\ccode{params}; calculate the expected counts in each bin of the 
+histogram, and hold that information internally in the structure.
+
+The caller provides a function \ccode{(*cdf)()} that calculates
+the CDF via a generic interface, taking only two
+arguments: a quantile \ccode{x} and a void pointer to whatever
+parameters it needs, which it will cast and interpret.
+The \ccode{params} void pointer to the given parameters is
+just passed along to the generic \ccode{(*cdf)()} function. The
+caller will probably implement this \ccode{(*cdf)()} function as
+a wrapper around its real CDF function that takes
+explicit (non-void-pointer) arguments.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation failure; state of \ccode{h} is preserved.
+
+
+\hypertarget{func:esl_histogram_SetExpectedTail()}
+{\item[int esl\_histogram\_SetExpectedTail(ESL\_HISTOGRAM *h, double base\_val, double pmass,
+			      double (*cdf)(double x, void *params), 
+			      void *params)]}
+
+Given a histogram \ccode{h}, and a pointer to a generic function
+\ccode{(*cdf)()} that describes the expected cumulative
+distribution function for the right (high-scoring) tail
+starting at \ccode{base\_val} (all expected \ccode{x} $>$ \ccode{base\_val}) and
+containing a fraction \ccode{pmass} of the complete data
+distribution (\ccode{pmass} $\geq 0$ and $\leq 1$);
+set the expected binned counts for all complete bins
+$\geq$ \ccode{base\_val}. 
+
+If \ccode{base\_val} falls within a bin, that bin is considered
+to be incomplete, and the next higher bin is the starting
+point. 
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on memory allocation failure.
+\ccode{eslERANGE} if \ccode{base\_val} isn't a reasonable value within
+the histogram (it converts to a bin value outside
+integer range).
+
+
+\hypertarget{func:esl_histogram_Write()}
+{\item[int esl\_histogram\_Write(FILE *fp, ESL\_HISTOGRAM *h)]}
+
+Print a "prettified" display histogram \ccode{h} to a file
+pointer \ccode{fp}.  Deliberately a look-and-feel clone of
+Bill Pearson's excellent FASTA output.
+
+Also displays expected binned counts, if they've been
+set.
+
+Display will only work well if the bin width (w) is 0.1
+or more, because the score labels are only shown to one
+decimal point.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error, such as a
+filled disk.
+
+
+\hypertarget{func:esl_histogram_Plot()}
+{\item[int esl\_histogram\_Plot(FILE *fp, ESL\_HISTOGRAM *h)]}
+
+Print observed (and expected, if set) binned counts
+in a histogram \ccode{h} to open file pointer \ccode{fp}
+in xmgrace XY input file format.
+
+The number that's plotted on the X axis is the minimum
+(starting) value of the bin's interval. The Y value is
+the total number of counts in the interval (x,x+w] for bin
+width w. In xmgrace, you want to set "right stairs" as
+the line type in an XY plot.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error.
+
+
+\hypertarget{func:esl_histogram_PlotSurvival()}
+{\item[int esl\_histogram\_PlotSurvival(FILE *fp, ESL\_HISTOGRAM *h)]}
+
+Given a histogram \ccode{h}, output the observed (and
+expected, if available) survival function $P(X>x)$
+to file pointer \ccode{fp} in xmgrace XY input file format.
+
+One point is plotted per bin, so the narrower the
+bin width, the more smooth and accurate the resulting
+plots will be.
+
+As a special case, always plot the highest score with
+survival probability 1/N, if it occurred in a bin with
+other samples. This is to prevent a survival plot from
+looking like it was artificially truncated.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error.
+
+
+\hypertarget{func:esl_histogram_PlotQQ()}
+{\item[int esl\_histogram\_PlotQQ(FILE *fp, ESL\_HISTOGRAM *h, 
+		     double (*invcdf)(double x, void *params), void *params)]}
+
+Given a histogram \ccode{h} containing an empirically observed
+distribution, and a pointer to a function \ccode{(*invcdf)()}
+for an expected inverse cumulative distribution
+function conditional on some parameters \ccode{params};
+output a Q-Q plot in xmgrace XY format to file \ccode{fp}.
+
+Same domain limits as goodness-of-fit testing: output
+is restricted to overlap between observed data (excluding
+any censored data) and expected data (which may be limited
+if only a tail was fit).
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error.
+
+
+\hypertarget{func:esl_histogram_Goodness()}
+{\item[int esl\_histogram\_Goodness(ESL\_HISTOGRAM *h, 
+		       int nfitted, int *ret\_nbins,
+		       double *ret\_G,  double *ret\_Gp,
+		       double *ret\_X2, double *ret\_X2p)]}
+
+Given a histogram \ccode{h} with observed and expected counts,
+where, for the expected counts, \ccode{nfitted} ($\geq 0$)
+parameters were fitted (and thus should be subtracted
+from the degrees of freedom);
+Perform a G-test and/or a $\chi^2$ test for goodness of 
+fit between observed and expected, and optionally return
+the number of bins the data were sorted into
+(\ccode{ret\_bins}), the G statistic and its probability (\ccode{ret\_G} and
+\ccode{ret\_Gp}), and the $\chi^2$ statistic and its probability
+(\ccode{ret\_X2} and \ccode{ret\_X2p}). 
+
+If a goodness-of-fit probability is less than some threshold
+(usually taken to be 0.01 or 0.05), that is considered to
+be evidence that the observed data are unlikely to be consistent
+with the tested distribution.
+
+The two tests should give similar
+probabilities. However, both tests are sensitive to
+arbitrary choices in how the data are binned, and
+neither seems to be on an entirely sound theoretical
+footing.
+
+On some datasets, pathological and/or very small, it may
+be impossible to calculate goodness of fit
+statistics. In this case, \ccode{eslENORESULT} is returned.
+
+Returns \ccode{eslOK} on success.
+
+\ccode{eslENORESULT} if the data are such that goodness-of-fit
+statistics can't be calculated, probably because there
+just aren't many data points. On this error, \ccode{*ret\_G}
+and \ccode{*ret\_X2} are 0.0, and \ccode{*ret\_Gp} and \ccode{*ret\_X2p} are
+1.0. (Because suppose n=1: then any fit to a single data
+point is "perfect".)
+
+Throws \ccode{eslEINVAL} if expected counts have not been set in
+the histogram; \ccode{eslERANGE} or \ccode{eslENOHALT} on different internal
+errors that can arise in calculating the probabilities;
+\ccode{eslEMEM} on internal allocation failure.
+
+
+\end{sreapi}
+

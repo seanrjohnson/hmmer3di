@@ -1,0 +1,46 @@
+\begin{cchunk}
+#include <stdio.h>
+#include "easel.h"
+#include "esl_random.h"
+#include "esl_gumbel.h"
+
+int
+main(int argc, char **argv)
+{
+  ESL_RANDOMNESS *r = esl_randomness_Create(0);;
+  int     n         = 10000; 	/* simulate 10,000 samples */
+  double  mu        = -20.0;       /* with mu = -20 */ 
+  double  lambda    = 0.4;         /* and lambda = 0.4 */
+  double  min       =  9999.;
+  double  max       = -9999.;
+  double *x         = malloc(sizeof(double) * n);
+  double  z, est_mu, est_lambda;
+  int     i;
+
+  for (i = 0; i < n; i++)	/* generate the 10,000 samples */
+    { 
+      x[i] = esl_gumbel_Sample(r, mu, lambda);
+      if (x[i] < min) min = x[i];
+      if (x[i] > max) max = x[i];
+    }
+
+  z = esl_gumbel_surv(max, mu, lambda);           /* right tail p~1e-4 >= max */
+  printf("max = %6.1f  P(>max)  = %g\n", max, z);
+  z = esl_gumbel_cdf(min, mu, lambda);             /* left tail p~1e-4 < min */
+  printf("min = %6.1f  P(<=min) = %g\n", min, z);
+
+  if (esl_gumbel_FitComplete(x, n, &est_mu, &est_lambda) != eslOK) /* fit params to the data */
+    esl_fatal("gumbel ML complete data fit failed");
+
+  z = 100. * fabs((est_mu - mu) / mu);
+  printf("Parametric mu     = %6.1f.  Estimated mu     = %6.2f.  Difference = %.1f%%.\n",
+	 mu, est_mu, z);
+  z = 100. * fabs((est_lambda - lambda) /lambda);
+  printf("Parametric lambda = %6.1f.  Estimated lambda = %6.2f.  Difference = %.1f%%.\n",
+	 lambda, est_lambda, z);
+
+  free(x);
+  esl_randomness_Destroy(r);
+  return 0;
+}
+\end{cchunk}

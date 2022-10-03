@@ -1,0 +1,51 @@
+\begin{sreapi}
+\hypertarget{func:esl_paml_ReadE()}
+{\item[int esl\_paml\_ReadE(FILE *fp, ESL\_DMATRIX *E, double *pi)]}
+
+Read an amino acid rate matrix in PAML format from stream
+\ccode{fp}. Return it in two pieces: the symmetric E
+exchangeability matrix in \ccode{E}, and the stationary
+probability vector $\pi$ in \ccode{pi}.
+Caller provides the memory for both \ccode{E} and \ccode{pi}.  \ccode{E}
+is a $20 \times 20$ matrix allocated as
+\ccode{esl\_dmatrix\_Create(20, 20)}. \ccode{pi} is an array with
+space for at least 20 doubles.
+
+The \ccode{E} matrix is symmetric for off-diagonal elements:
+$E_{ij} = E_{ij}$ for $i \neq j$.  The on-diagonal
+elements $E_{ii}$ are not valid and should not be
+accessed.  (They are set to zero.)
+
+The rate matrix will later be obtained from \ccode{E}
+and \ccode{pi} as 
+$Q_{ij} = E_{ij} \pi_j$ for $i \neq j$ 
+and
+$Q_{ii} = -\sum_{j \neq i} Q_{ij}$ 
+then scaled to units of one
+substitution/site; see \ccode{esl\_ratemx\_E2Q()} and
+\ccode{esl\_ratemx\_ScaleTo()}.
+
+Data file format: First 190 numbers are a
+lower-triangular matrix E of amino acid
+exchangeabilities $E_{ij}$. Next 20 numbers are the
+amino acid frequencies $\pi_i$. Remainder of the
+datafile is ignored.
+
+The alphabet order in the matrix and the frequency
+vector is assumed to be "ARNDCQEGHILKMFPSTWYV"
+(alphabetical by three-letter code), which appears to be
+PAML's default order. This is transformed to Easel's
+"ACDEFGHIKLMNPQRSTVWY" (alphabetical by one-letter code)
+in the $E_{ij}$ and $\pi_i$ that are returned.
+
+Returns \ccode{eslOK} on success.
+Returns \ccode{eslEOF} on premature end of file (parse failed), in which
+case the contents of \ccode{E} and \ccode{pi} are undefined.
+
+Throws \ccode{eslEMEM} on internal allocation failure,
+and the contents of \ccode{E} and \ccode{pi} are undefined.
+
+
+
+\end{sreapi}
+

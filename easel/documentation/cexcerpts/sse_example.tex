@@ -1,0 +1,27 @@
+\begin{cchunk}
+#include "esl_config.h"
+
+#include <stdio.h>
+#include <math.h>
+
+#include "easel.h"
+#include "esl_sse.h"
+
+int
+main(int argc, char **argv)
+{
+  float    x;                           /* scalar input */
+  __m128   xv;                          /* input vector */
+  union { __m128 v; float x[4]; } rv;   /* result vector*/
+
+  x    = 2.0;
+  xv   = _mm_set1_ps(x);
+  rv.v = esl_sse_logf(xv);
+  printf("logf(%f) = %f\n", x, rv.x[0]);
+  
+  rv.v = esl_sse_expf(xv);
+  printf("expf(%f) = %f\n", x, rv.x[0]);
+
+  return 0;
+}
+\end{cchunk}

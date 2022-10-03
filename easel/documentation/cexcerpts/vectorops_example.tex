@@ -1,0 +1,19 @@
+\begin{cchunk}
+/*   gcc -g -Wall -o example -I. -DeslVECTOROPS_EXAMPLE esl_vectorops.c easel.c -lm   */
+#include "easel.h"
+#include "esl_vectorops.h"
+
+int main(void)
+{
+  double *p;
+  char    labels[] = "ACGT";
+  int     n = 4;
+
+  p = malloc(sizeof(double) * n);
+  esl_vec_DSet(p, n, 1.0);
+  esl_vec_DNorm(p, n);
+  esl_vec_DDump(stdout, p, n, labels);
+  free(p);
+  return 0;
+}
+\end{cchunk}

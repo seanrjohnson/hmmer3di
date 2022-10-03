@@ -1,0 +1,433 @@
+\begin{sreapi}
+\hypertarget{func:esl_dmatrix_Create()}
+{\item[ESL\_DMATRIX * esl\_dmatrix\_Create(int n, int m)]}
+
+Creates a general \ccode{n} x \ccode{m} matrix (\ccode{n} rows, \ccode{m} 
+columns).
+
+Returns a pointer to a new \ccode{ESL\_DMATRIX} object. Caller frees
+with \ccode{esl\_dmatrix\_Destroy()}.
+
+Throws \ccode{NULL} if an allocation failed.
+
+
+\hypertarget{func:esl_dmatrix_CreateUpper()}
+{\item[ESL\_DMATRIX * esl\_dmatrix\_CreateUpper(int n)]}
+
+Creates a packed upper triangular matrix of \ccode{n} rows and
+\ccode{n} columns. Caller may only access cells $i \leq j$.
+Cells $i > j$ are not stored and are implicitly 0.
+
+Not all matrix operations in Easel can work on packed
+upper triangular matrices.
+
+Returns a pointer to a new \ccode{ESL\_DMATRIX} object of type
+\ccode{eslUPPER}. Caller frees with \ccode{esl\_dmatrix\_Destroy()}.
+
+Throws \ccode{NULL} if allocation fails.
+
+
+
+\hypertarget{func:esl_dmatrix_Destroy()}
+{\item[int esl\_dmatrix\_Destroy(ESL\_DMATRIX *A)]}
+
+Frees an \ccode{ESL\_DMATRIX} object \ccode{A}.
+
+
+\hypertarget{func:esl_dmatrix_Copy()}
+{\item[int esl\_dmatrix\_Copy(const ESL\_DMATRIX *src, ESL\_DMATRIX *dest)]}
+
+Copies \ccode{src} matrix into \ccode{dest} matrix. \ccode{dest} must
+be allocated already by the caller.
+
+You may copy to a matrix of a different type, so long as
+the copy makes sense. If \ccode{dest} matrix is a packed type
+and \ccode{src} is not, the values that should be zeros must
+be zero in \ccode{src}, else the routine throws
+\ccode{eslEINCOMPAT}. If the \ccode{src} matrix is a packed type and
+\ccode{dest} is not, the values that are implicitly zeros are
+set to zeros in the \ccode{dest} matrix.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINCOMPAT} if \ccode{src}, \ccode{dest} are different sizes,
+or if their types differ and \ccode{dest} cannot represent
+\ccode{src}.
+
+
+\hypertarget{func:esl_dmatrix_Clone()}
+{\item[ESL\_DMATRIX * esl\_dmatrix\_Clone(const ESL\_DMATRIX *A)]}
+
+Duplicates matrix \ccode{A}, making a copy in newly
+allocated space.
+
+Returns a pointer to the copy. Caller frees with 
+\ccode{esl\_dmatrix\_Destroy()}.
+
+Throws \ccode{NULL} on allocation failure.
+
+
+\hypertarget{func:esl_dmatrix_Compare()}
+{\item[int esl\_dmatrix\_Compare(const ESL\_DMATRIX *A, const ESL\_DMATRIX *B, double tol)]}
+
+Compares matrix \ccode{A} to matrix \ccode{B} element by element,
+using \ccode{esl\_DCompare()} on each cognate element pair,
+with relative equality defined by a fractional tolerance
+\ccode{tol}.  If all elements are equal, return \ccode{eslOK}; if
+any elements differ, return \ccode{eslFAIL}.
+
+\ccode{A} and \ccode{B} may be of different types; for example,
+a packed upper triangular matrix A is compared to
+a general matrix B by assuming \ccode{A->mx[i][j] = 0.} for
+all $i>j$.
+
+
+\hypertarget{func:esl_dmatrix_CompareAbs()}
+{\item[int esl\_dmatrix\_CompareAbs(const ESL\_DMATRIX *A, const ESL\_DMATRIX *B, double tol)]}
+
+Compares matrix \ccode{A} to matrix \ccode{B} element by element,
+using \ccode{esl\_DCompareAbs()} on each cognate element pair,
+with absolute equality defined by a absolute difference tolerance
+\ccode{tol}.  If all elements are equal, return \ccode{eslOK}; if
+any elements differ, return \ccode{eslFAIL}.
+
+\ccode{A} and \ccode{B} may be of different types; for example,
+a packed upper triangular matrix A is compared to
+a general matrix B by assuming \ccode{A->mx[i][j] = 0.} for
+all $i>j$.
+
+
+\hypertarget{func:esl_dmatrix_Set()}
+{\item[int esl\_dmatrix\_Set(ESL\_DMATRIX *A, double x)]}
+
+Set all elements $a_{ij}$ in matrix \ccode{A} to \ccode{x},
+and returns \ccode{eslOK}.
+
+
+\hypertarget{func:esl_dmatrix_SetZero()}
+{\item[int esl\_dmatrix\_SetZero(ESL\_DMATRIX *A)]}
+
+Sets all elements $a_{ij}$ in matrix \ccode{A} to 0,
+and returns \ccode{eslOK}.
+
+
+\hypertarget{func:esl_dmatrix_SetIdentity()}
+{\item[int esl\_dmatrix\_SetIdentity(ESL\_DMATRIX *A)]}
+
+Given a square matrix \ccode{A}, sets all diagonal elements 
+$a_{ii}$ to 1, and all off-diagonal elements $a_{ij},
+j \ne i$ to 0. Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if the matrix isn't square.
+
+
+\hypertarget{func:esl_dmatrix_Dump()}
+{\item[int esl\_dmatrix\_Dump(FILE *ofp, const ESL\_DMATRIX *A, const char *rowlabel, const char *collabel)]}
+
+Given a matrix \ccode{A}, dump it to output stream \ccode{ofp} in human-readable
+format.
+
+If \ccode{rowlabel} or \ccode{collabel} are non-NULL, they specify a
+string of single-character labels to put on the rows and
+columns, respectively. (For example, these might be a
+sequence alphabet for a 4x4 or 20x20 rate matrix or
+substitution matrix.)  Numbers \ccode{1..ncols} or \ccode{1..nrows} are
+used if \ccode{collabel} or \ccode{rowlabel} are passed as \ccode{NULL}.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_dmatrix_PlotHeatMap()}
+{\item[int esl\_dmatrix\_PlotHeatMap(FILE *fp, ESL\_DMATRIX *D, double min, double max)]}
+
+Export a heat map visualization of the matrix in \ccode{D}
+to open stream \ccode{fp}, in PostScript format. 
+
+All values between \ccode{min} and \ccode{max} in \ccode{D} are rescaled
+linearly and assigned to shades. Values below \ccode{min}
+are assigned to the lowest shade; values above \ccode{max}, to
+the highest shade.
+
+The plot is hardcoded to be a full US 8x11.5" page,
+with at least a 20pt margin.
+
+Several color schemes are enumerated in the code
+but all but one is commented out. The currently enabled
+scheme is a 10-class scheme consisting of the 9-class
+Reds from colorbrewer2.org plus a blue background class.
+
+Returns \ccode{eslOK} on success.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_permutation_Create()}
+{\item[ESL\_PERMUTATION * esl\_permutation\_Create(int n)]}
+
+Creates a new permutation "matrix" of size \ccode{n} for
+permuting \ccode{n} x \ccode{n} square matrices; returns a 
+pointer to it.
+
+A permutation matrix consists of 1's and 0's such that
+any given row or column contains only one 1. We store it
+more efficiently as a vector; each value $p_i$
+represents the column $j$ that has the 1. Thus, on
+initialization, $p_i = i$ for all $i = 0..n-1$.
+
+Returns a pointer to a new \ccode{ESL\_PERMUTATION} object. Free with 
+\ccode{esl\_permutation\_Destroy()}.
+
+Throws \ccode{NULL} if allocation fails.
+
+
+\hypertarget{func:esl_permutation_Destroy()}
+{\item[int esl\_permutation\_Destroy(ESL\_PERMUTATION *P)]}
+
+Frees an \ccode{ESL\_PERMUTATION} object \ccode{P}.
+
+
+\hypertarget{func:esl_permutation_Reuse()}
+{\item[int esl\_permutation\_Reuse(ESL\_PERMUTATION *P)]}
+
+Resets a permutation matrix \ccode{P} to
+$p_i = i$ for all $i = 0..n-1$.
+
+Returns \ccode{eslOK} on success.           
+
+
+\hypertarget{func:esl_permutation_Dump()}
+{\item[int esl\_permutation\_Dump(FILE *ofp, const ESL\_PERMUTATION *P, const char *rowlabel, const char *collabel)]}
+
+Given a permutation matrix \ccode{P}, dump it to output stream \ccode{ofp}
+in human-readable format.
+
+If \ccode{rowlabel} or \ccode{collabel} are non-NULL, they represent
+single-character labels to put on the rows and columns,
+respectively. (For example, these might be a sequence
+alphabet for a 4x4 or 20x20 rate matrix or substitution
+matrix.)  Numbers 1..ncols or 1..nrows are used if
+\ccode{collabel} or \ccode{rowlabel} are NULL.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_dmx_Max()}
+{\item[double esl\_dmx\_Max(const ESL\_DMATRIX *A)]}
+
+Returns the maximum value of all the elements $a_{ij}$ in matrix \ccode{A}.
+
+
+\hypertarget{func:esl_dmx_Min()}
+{\item[double esl\_dmx\_Min(const ESL\_DMATRIX *A)]}
+
+Returns the minimum value of all the elements $a_{ij}$ in matrix \ccode{A}.
+
+
+\hypertarget{func:esl_dmx_MinMax()}
+{\item[int esl\_dmx\_MinMax(const ESL\_DMATRIX *A, double *ret\_min, double *ret\_max)]}
+
+Finds the maximum and minimum values of the
+elements $a_{ij}$ in matrix \ccode{A}, and returns
+them in \ccode{ret\_min} and \ccode{ret\_max}.
+
+Returns \ccode{eslOK} on success.            
+
+
+
+\hypertarget{func:esl_dmx_Sum()}
+{\item[double esl\_dmx\_Sum(const ESL\_DMATRIX *A)]}
+
+Returns the scalar sum of all the elements $a_{ij}$ in matrix \ccode{A},
+$\sum_{ij} a_{ij}$.
+
+
+\hypertarget{func:esl_dmx_FrobeniusNorm()}
+{\item[int esl\_dmx\_FrobeniusNorm(const ESL\_DMATRIX *A, double *ret\_fnorm)]}
+
+Calculates the Frobenius norm of a matrix, which
+is the element-wise equivalant of a 
+Euclidean vector norm: 
+$ = \sqrt(\sum a_{ij}^2)$
+
+Returns \ccode{eslOK} on success, and the Frobenius norm
+is in \ccode{ret\_fnorm}.
+
+
+\hypertarget{func:esl_dmx_Multiply()}
+{\item[int esl\_dmx\_Multiply(const ESL\_DMATRIX *A, const ESL\_DMATRIX *B, ESL\_DMATRIX *C)]}
+
+Matrix multiplication: calculate \ccode{AB}, store result in \ccode{C}.
+\ccode{A} is $n times m$; \ccode{B} is $m \times p$; \ccode{C} is $n \times p$.
+Matrix \ccode{C} must be allocated appropriately by the caller.
+
+Not supported for anything but general (\ccode{eslGENERAL})
+matrix type, at present.
+
+Throws \ccode{eslEINVAL} if matrices don't have compatible dimensions,
+or if any of them isn't a general (\ccode{eslGENERAL}) matrix.
+
+
+\hypertarget{func:esl_dmx_Exp()}
+{\item[int esl\_dmx\_Exp(const ESL\_DMATRIX *Q, double t, ESL\_DMATRIX *P)]}
+
+Calculates the matrix exponential $\mathbf{P} = e^{t\mathbf{Q}}$,
+using a scaling and squaring algorithm with
+the Taylor series approximation \citep{MolerVanLoan03}.
+
+\ccode{Q} must be a square matrix of type \ccode{eslGENERAL}.
+Caller provides an allocated \ccode{P} matrix of the same size and type as \ccode{Q}.
+
+A typical use of this function is to calculate a
+conditional substitution probability matrix $\mathbf{P}$
+(whose elements $P_{xy}$ are conditional substitution
+probabilities $\mathrm{Prob}(y \mid x, t)$ from time $t$
+and instantaneous rate matrix $\mathbf{Q}$.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+
+\hypertarget{func:esl_dmx_Transpose()}
+{\item[int esl\_dmx\_Transpose(ESL\_DMATRIX *A)]}
+
+Transpose a square matrix \ccode{A} in place.
+
+\ccode{A} must be a general (\ccode{eslGENERAL}) matrix type.
+
+Throws \ccode{eslEINVAL} if \ccode{A} isn't square, or if it isn't
+of type \ccode{eslGENERAL}.
+
+
+\hypertarget{func:esl_dmx_Add()}
+{\item[int esl\_dmx\_Add(ESL\_DMATRIX *A, const ESL\_DMATRIX *B)]}
+
+\ccode{A = A+B}; adds matrix \ccode{B} to matrix \ccode{A} and leaves result
+in matrix \ccode{A}.
+
+\ccode{A} and \ccode{B} may be of any type. However, if \ccode{A} is a
+packed upper triangular matrix (type
+\ccode{eslUPPER}), all values $i>j$ in \ccode{B} must be
+zero (i.e. \ccode{B} must also be upper triangular, though
+not necessarily packed upper triangular).
+
+Throws \ccode{eslEINVAL} if matrices aren't the same dimensions, or
+if \ccode{A} is \ccode{eslUPPER} and any cell $i>j$ in
+\ccode{B} is nonzero.
+
+
+\hypertarget{func:esl_dmx_Scale()}
+{\item[int esl\_dmx\_Scale(ESL\_DMATRIX *A, double k)]}
+
+Calculates \ccode{A = kA}: multiply matrix \ccode{A} by scalar
+\ccode{k} and leave answer in \ccode{A}.
+
+
+\hypertarget{func:esl_dmx_AddScale()}
+{\item[int esl\_dmx\_AddScale(ESL\_DMATRIX *A, double k, const ESL\_DMATRIX *B)]}
+
+Calculates \ccode{A + kB}, leaves answer in \ccode{A}.
+
+Only defined for matrices of the same type (\ccode{eslGENERAL}
+or \ccode{eslUPPER}).
+
+Throws \ccode{eslEINVAL} if matrices aren't the same dimensions, or
+of different types.
+
+
+\hypertarget{func:esl_dmx_Permute_PA()}
+{\item[int esl\_dmx\_Permute\_PA(const ESL\_PERMUTATION *P, const ESL\_DMATRIX *A, ESL\_DMATRIX *B)]}
+
+Computes \ccode{B = PA}: do a row-wise permutation of a square
+matrix \ccode{A}, using the permutation matrix \ccode{P}, and put
+the result in a square matrix \ccode{B} that the caller has
+allocated.
+
+Throws \ccode{eslEINVAL} if \ccode{A}, \ccode{B}, \ccode{P} do not have compatible dimensions,
+or if \ccode{A} or \ccode{B} is not of type \ccode{eslGENERAL}.
+
+
+\hypertarget{func:esl_dmx_LUP_decompose()}
+{\item[int esl\_dmx\_LUP\_decompose(ESL\_DMATRIX *A, ESL\_PERMUTATION *P)]}
+
+Calculates a permuted LU decomposition of square matrix
+\ccode{A}; upon return, \ccode{A} is replaced by this decomposition,
+where \ccode{U} is in the lower triangle (inclusive of the 
+diagonal) and \ccode{L} is the upper triangle (exclusive of
+diagonal, which is 1's by definition), and \ccode{P} is the
+permutation matrix. Caller provides an allocated 
+permutation matrix \ccode{P} compatible with the square matrix
+\ccode{A}.
+
+Implements Gaussian elimination with pivoting 
+\citep[p.~759]{Cormen99}.
+
+Throws \ccode{eslEINVAL} if \ccode{A} isn't square, or if \ccode{P} isn't the right
+size for \ccode{A}, or if \ccode{A} isn't of general type.
+
+
+\hypertarget{func:esl_dmx_LU_separate()}
+{\item[int esl\_dmx\_LU\_separate(const ESL\_DMATRIX *LU, ESL\_DMATRIX *L, ESL\_DMATRIX *U)]}
+
+Separate a square \ccode{LU} decomposition matrix into its two
+triangular matrices \ccode{L} and \ccode{U}. Caller provides two
+allocated \ccode{L} and \ccode{U} matrices of same size as \ccode{LU} for
+storing the results.
+
+\ccode{U} may be an upper triangular matrix in either unpacked
+(\ccode{eslGENERAL}) or packed (\ccode{eslUPPER}) form.
+\ccode{LU} and \ccode{L} must be of \ccode{eslGENERAL} type.
+
+Throws \ccode{eslEINVAL} if \ccode{LU}, \ccode{L}, \ccode{U} are not of compatible dimensions,
+or if \ccode{LU} or \ccode{L} aren't of general type. 
+
+
+\hypertarget{func:esl_dmx_Invert()}
+{\item[int esl\_dmx\_Invert(const ESL\_DMATRIX *A, ESL\_DMATRIX *Ai)]}
+
+Calculates the inverse of square matrix \ccode{A}, and stores the
+result in matrix \ccode{Ai}. Caller provides an allocated
+matrix \ccode{Ai} of same dimensions as \ccode{A}. Both must be
+of type \ccode{eslGENERAL}.
+
+Peforms the inversion by LUP decomposition followed by 
+forward/back-substitution \citep[p.~753]{Cormen99}.
+
+Throws \ccode{eslEINVAL} if \ccode{A}, \ccode{Ai} do not have same dimensions, 
+if \ccode{A} isn't square, or if either isn't of
+type \ccode{eslGENERAL}.
+\ccode{eslEMEM}   if internal allocations (for LU, and some other
+bookkeeping) fail.
+
+
+\hypertarget{func:esl_dmx_Diagonalize()}
+{\item[int esl\_dmx\_Diagonalize(const ESL\_DMATRIX *A, double **ret\_Er, double **ret\_Ei, 
+		    ESL\_DMATRIX **ret\_UL, ESL\_DMATRIX **ret\_UR)]}
+
+Given a square real matrix \ccode{A}, diagonalize it:
+solve for $U^{-1} A U = diag(\lambda_1... \lambda_n)$.
+
+Upon return, \ccode{ret\_Er} and \ccode{ret\_Ei} are vectors
+containing the real and complex parts of the eigenvalues
+$\lambda_i$; \ccode{ret\_UL} is the $U^{-1}$ matrix containing
+the left eigenvectors; and \ccode{ret\_UR} is the $U$ matrix
+containing the right eigenvectors.
+
+\ccode{ret\_UL} and \ccode{ret\_UR} are optional; pass \ccode{NULL} for
+either if you don't want that set of eigenvectors.
+
+This is a C interface to the \ccode{dgeev()} routine in the
+LAPACK linear algebra library.
+
+Returns \ccode{eslOK} on success.
+\ccode{ret\_Er} and \ccode{ret\_Ei} (and \ccode{ret\_UL},\ccode{ret\_UR} when they are
+requested) are allocated here, and must be free'd by the caller.
+
+Throws \ccode{eslEMEM} on allocation failure.
+In this case, the four return pointers are returned \ccode{NULL}.
+
+
+
+\end{sreapi}
+

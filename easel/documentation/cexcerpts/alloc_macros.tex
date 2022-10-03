@@ -1,0 +1,35 @@
+\begin{cchunk}
+#define ESL_ALLOC(p, size) do {\
+    if ( size <= 0 ) { \
+       p = NULL; \
+       status = eslEMEM; \
+       esl_exception(status, FALSE, __FILE__, __LINE__, "zero malloc disallowed"); \
+       goto ERROR;\
+    }\
+    if ( ((p) = malloc(size)) == NULL)  { \
+       status = eslEMEM;\
+       esl_exception(status, FALSE, __FILE__, __LINE__, "malloc of size %d failed", size); \
+       goto ERROR;\
+     }} while (0)
+
+#define ESL_RALLOC(p, tmp, newsize) do {\
+     if ((p) == NULL) { (tmp) = malloc(newsize);         }\
+     else             { (tmp) = realloc((p), (newsize)); }\
+     if ((tmp) != NULL) (p) = (tmp);\
+     else {\
+       status = eslEMEM;\
+       esl_exception(status, FALSE, __FILE__, __LINE__, "realloc for size %d failed", newsize);	\
+       goto ERROR;\
+     }} while (0)
+
+#define ESL_REALLOC(p, newsize) do {\
+     void *esltmpp;\
+     if ((p) == NULL) { (esltmpp) = malloc(newsize);         }\
+     else             { (esltmpp) = realloc((p), (newsize)); }\
+     if ((esltmpp) != NULL) (p) = (esltmpp);\
+     else {\
+       status = eslEMEM;\
+       esl_exception(status, FALSE, __FILE__, __LINE__, "realloc for size %d failed", newsize); \
+       goto ERROR;\
+     }} while (0)
+\end{cchunk}

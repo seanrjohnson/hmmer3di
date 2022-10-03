@@ -1,0 +1,63 @@
+\begin{sreapi}
+\hypertarget{func:esl_min_ConjugateGradientDescent()}
+{\item[int esl\_min\_ConjugateGradientDescent(ESL\_MIN\_CFG *cfg, double *x, int n, 
+       				 double (*func)(double *, int, void *),
+				 void (*dfunc)(double *, int, void *, double *),
+				 void *prm, double *opt\_fx, ESL\_MIN\_DAT *dat)]}
+
+n-dimensional minimization by conjugate gradient descent.
+
+An initial point is provided by \ccode{x}, a vector of \ccode{n}
+components. The caller also provides a function \ccode{*func()} that 
+compute the objective function f(x) when called as 
+\ccode{(*func)(x, n, prm)}, and a function \ccode{*dfunc()} that can
+compute the gradient \ccode{dx} at \ccode{x} when called as 
+\ccode{(*dfunc)(x, n, prm, dx)}, given an allocated vector \ccode{dx}
+to put the derivative in. Any additional data or fixed
+parameters that these functions require are passed by
+the void pointer \ccode{prm}.
+
+The first step of each iteration is to try to bracket
+the minimum along the current direction. The initial step
+size is controlled by \ccode{u[]}; the first step will not exceed 
+\ccode{u[i]} for any dimension \ccode{i}. (You can think of \ccode{u} as
+being the natural "units" to use along a graph axis, if
+you were plotting the objective function.)
+
+The caller also provides an allocated workspace sufficient to
+hold four allocated n-vectors. (4 * sizeof(double) * n).
+
+Iterations continue until the objective function has changed
+by less than a fraction \ccode{tol}. This should not be set to less than
+sqrt(\ccode{DBL\_EPSILON}). 
+
+Upon return, \ccode{x} is the minimum, and \ccode{opt\_fx} (if
+provided) is f(x), the function value at \ccode{x}.
+
+Returns \ccode{eslOK} on success. \ccode{x} is updated to be the minimum. \ccode{*opt\_fx},
+if provided, contains f(x) at that minimum. \ccode{*opt\_dat}, if
+an allocated \ccode{ESL\_MIN\_DAT} was provided, contains a table of 
+statistics on the run.
+
+\ccode{eslENOHALT} if it fails to converge in max iterations,
+but the final \ccode{x}, \ccode{*opt\_fx}, and \ccode{*opt\_dat} are still provided;
+maybe they're good enough, caller can decide.
+
+Throws \ccode{eslERANGE} if the minimum is not finite, which may
+indicate a problem in the implementation or choice of \ccode{*func()}.
+
+\ccode{eslEMEM} on allocation failure.
+On thrown exceptions, \ccode{*opt\_fx} is eslINFINITY, and \ccode{x} is undefined.
+
+
+
+\hypertarget{func:esl_min_dat_Create()}
+{\item[ESL\_MIN\_DAT * esl\_min\_dat\_Create(ESL\_MIN\_CFG *cfg)]}
+
+Collects statistics on a CG minimizer run for each
+iteration 1..niter, plus the initial position 0.
+
+
+
+\end{sreapi}
+

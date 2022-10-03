@@ -1,0 +1,51 @@
+\begin{cchunk}
+/*
+   gcc -g -Wall -o msacluster_example -I. -L. -DeslMSACLUSTER_EXAMPLE esl_msacluster.c -leasel -lm
+   ./msacluster_example <MSA file>
+ */
+#include <stdio.h>
+#include "easel.h"
+#include "esl_msa.h"
+#include "esl_msacluster.h"
+#include "esl_msafile.h"
+
+int
+main(int argc, char **argv)
+{
+  char        *filename   = argv[1];
+  int          fmt        = eslMSAFILE_UNKNOWN; 
+  ESL_ALPHABET *abc       = NULL;
+  ESL_MSAFILE  *afp       = NULL;
+  ESL_MSA      *msa       = NULL;
+  double       maxid      = 0.62; /* cluster at 62% identity: the BLOSUM62 rule */
+  int         *assignment = NULL;
+  int         *nin        = NULL;
+  int          nclusters;
+  int          c, i;		  
+  int          status;
+
+  /* Open; guess alphabet; set to digital mode */
+  if ((status = esl_msafile_Open(&abc, filename, NULL, fmt, NULL, &afp)) != eslOK)
+    esl_msafile_OpenFailure(afp, status);
+
+  /* read one alignment */
+  if ((status = esl_msafile_Read(afp, &msa)) != eslOK)
+    esl_msafile_ReadFailure(afp, status);
+
+  /* do the clustering */
+  esl_msacluster_SingleLinkage(msa, maxid, &assignment, &nin, &nclusters);
+
+  printf("%d clusters at threshold of %f fractional identity\n", nclusters, maxid);
+  for (c = 0; c < nclusters; c++) {
+    printf("cluster %d:\n", c);
+    for (i = 0; i < msa->nseq; i++) if (assignment[i] == c) printf("  %s\n", msa->sqname[i]);
+    printf("(%d sequences)\n\n", nin[c]);
+  }
+
+  esl_msa_Destroy(msa);
+  esl_msafile_Close(afp);
+  free(assignment);
+  free(nin);
+  return 0;
+}
+\end{cchunk}

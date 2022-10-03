@@ -1,0 +1,181 @@
+\begin{sreapi}
+\hypertarget{func:esl_gam_pdf()}
+{\item[double esl\_gam\_pdf(double x, double mu, double lambda, double tau)]}
+
+Calculates the gamma PDF $P(X=x)$ given value \ccode{x},
+location parameter \ccode{mu}, scale parameter \ccode{lambda}, and shape
+parameter \ccode{tau}.
+
+
+\hypertarget{func:esl_gam_logpdf()}
+{\item[double esl\_gam\_logpdf(double x, double mu, double lambda, double tau)]}
+
+Calculates log of the probability density function
+for the gamma, $\log P(X=x)$, given value \ccode{x},
+location parameter \ccode{mu}, scale parameter \ccode{lambda}, and 
+shape parameter \ccode{tau}.
+
+
+\hypertarget{func:esl_gam_cdf()}
+{\item[double esl\_gam\_cdf(double x, double mu, double lambda, double tau)]}
+
+Calculates the cumulative distribution function
+for the gamma, $P(X \leq x)$, given value \ccode{x}, 
+location parameter \ccode{mu}, scale parameter \ccode{lambda}, and 
+shape parameter \ccode{tau}.
+
+(For $\mu=0$, $\lambda = 1$, this is the
+incomplete Gamma function $P(\tau,x)$.)
+
+
+\hypertarget{func:esl_gam_logcdf()}
+{\item[double esl\_gam\_logcdf(double x, double mu, double lambda, double tau)]}
+
+Calculates the log of the cumulative distribution function 
+for the gamma, $\log P(X \leq x)$, given value \ccode{x}, location
+parameter \ccode{mu}, scale parameter \ccode{lambda}, and shape 
+parameter \ccode{tau}.
+
+
+\hypertarget{func:esl_gam_surv()}
+{\item[double esl\_gam\_surv(double x, double mu, double lambda, double tau)]}
+
+Calculates the survival function for the gamma, $P(X > x)$,
+given value \ccode{x}, location parameter \ccode{mu}, scale parameter 
+\ccode{lambda}, and shape parameter \ccode{tau}.
+
+
+\hypertarget{func:esl_gam_logsurv()}
+{\item[double esl\_gam\_logsurv(double x, double mu, double lambda, double tau)]}
+
+Calculates the log of the survival function for the gamma, 
+$\log P(X > x)$, given value \ccode{x}, location parameter \ccode{mu},
+scale parameter \ccode{lambda}, and shape parameter \ccode{tau}.
+
+Relies on \ccode{esl\_stats\_IncompleteGamma()}, which has limited
+dynamic range. Any result of \ccode{ -700 or so will be -infinity.
+To fix this, we need a log version of <esl\_stats\_IncompleteGamma()}.
+
+
+\hypertarget{func:esl_gam_invcdf()}
+{\item[double esl\_gam\_invcdf(double p, double mu, double lambda, double tau)]}
+
+Calculates the inverse CDF for a gamma with location
+parameter \ccode{mu}, scale parameter \ccode{lambda} and shape
+parameter \ccode{tau}, returning the value \ccode{x} at which the
+CDF is \ccode{p}.
+
+This inverse CDF is solved by a computationally expensive,
+brute force bisection search on the CDF of \ccode{x}.
+
+
+\hypertarget{func:esl_gam_generic_pdf()}
+{\item[double esl\_gam\_generic\_pdf(double x, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_gam\_pdf()}, taking 
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_gam_generic_cdf()}
+{\item[double esl\_gam\_generic\_cdf(double x, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_gam\_cdf()}, taking 
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_gam_generic_surv()}
+{\item[double esl\_gam\_generic\_surv(double x, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_gam\_surv()}, taking 
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_gam_generic_invcdf()}
+{\item[double esl\_gam\_generic\_invcdf(double x, void *params)]}
+
+Generic-API wrapper around \ccode{esl\_gam\_invcdf()}, taking 
+a void ptr to a double array containing $\mu$, $\lambda$,
+$\tau$ parameters.
+
+
+\hypertarget{func:esl_gam_Plot()}
+{\item[int esl\_gam\_Plot(FILE *fp, double mu, double lambda, double tau,
+	     double (*func)(double x, double mu, double lambda, double tau), 
+	     double xmin, double xmax, double xstep)]}
+
+Plot some gamma distribution function \ccode{func} (for instance,
+\ccode{esl\_gam\_pdf()}) for parameters \ccode{mu}, \ccode{lambda}, and \ccode{tau}, for
+a range of values x from \ccode{xmin} to \ccode{xmax} in steps of \ccode{xstep};
+output to an open stream \ccode{fp} in xmgrace XY input format.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error, such as a filled disk.
+
+
+\hypertarget{func:esl_gam_Sample()}
+{\item[double esl\_gam\_Sample(ESL\_RANDOMNESS *r, double mu, double lambda, double tau)]}
+
+Sample a gamma-distributed random variate.
+
+
+\hypertarget{func:esl_gam_FitComplete()}
+{\item[int esl\_gam\_FitComplete(double *x, int n, double mu, double *ret\_lambda, double *ret\_tau)]}
+
+Given complete data consisting of \ccode{n} samples \ccode{x[0]..x[n-1]},
+and a known location parameter \ccode{mu}, determine and return
+maximum likelihood parameters \ccode{ret\_lambda} and \ccode{ret\_tau}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslENOHALT} if bracketing or bisection fails;
+\ccode{eslEINVAL} if data cannot be gamma distributed (some \ccode{x[i] < mu},
+or zero variance in x).
+
+
+
+\hypertarget{func:esl_gam_FitCompleteBinned()}
+{\item[int esl\_gam\_FitCompleteBinned(ESL\_HISTOGRAM *g, double *ret\_mu, double *ret\_lambda, double *ret\_tau)]}
+
+Fit a complete exponential distribution to the observed
+binned data in a histogram \ccode{g}, where each
+bin i holds some number of observed samples x with values from 
+lower bound l to upper bound u (that is, $l < x \leq u$);
+determine and return maximum likelihood estimates for the
+parameters $\mu, \lambda, \tau$ and 
+return them in \ccode{*ret\_mu}, \ccode{*ret\_lambda}, \ccode{*ret\_tau}.
+
+Unlike the \ccode{esl\_exp\_FitCompleteBinned()} case where the
+ML fit optimizes $\sum_i n_i \log P(a_i \leq x < b_i)$
+where $a_i \leq b_i$ are the bounds of bin i with
+occupancy $n_i$, here we take the approximation that
+$c_i = a_i + 0.5*(b_i-a_i)$ and optimize $\log P(a_i
+\leq x < b_i) \simeq \log(w) + \log P(x=c_i)$.
+
+Since $b_i-a_i = w$ is fixed, optimizing the above
+becomes equivalent to optimizing $\sum_i n_i * log P(x=c_i)$.
+
+The optimization is then equivalent to the non-binned case,
+but subsituting in averages such as $\sum_i x(i)$ by
+$\sum_i n_i*c_i i$, and so forth.
+
+If the binned data in \ccode{g} were set to focus on 
+a tail by virtual censoring, the "complete" exponential is 
+fitted to this tail. The caller then also needs to
+remember what fraction of the probability mass was in this
+tail.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslENOHALT} if bracketing or bisection fails;
+\ccode{eslEINVAL} if data cannot be gamma distributed (some \ccode{x[i] < mu},
+or zero variance in x).
+
+
+
+
+\end{sreapi}
+

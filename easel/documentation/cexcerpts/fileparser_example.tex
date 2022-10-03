@@ -1,0 +1,25 @@
+\begin{cchunk}
+#include <stdio.h>
+#include "easel.h"
+#include "esl_fileparser.h"
+
+int 
+main(int argc, char **argv)
+{
+  char           *filename = argv[1];
+  int             ntok     = 1;
+  ESL_FILEPARSER *efp;
+  char           *tok;
+  int             toklen;
+
+  if (esl_fileparser_Open(filename, NULL, &efp) != eslOK) esl_fatal("File open failed");
+  esl_fileparser_SetCommentChar(efp, '#');
+  
+  while (esl_fileparser_GetToken(efp, &tok, &toklen) == eslOK) { 
+    printf("%5d %3d %s\n", ntok, toklen, tok); 
+    ntok++;  
+  }
+  esl_fileparser_Close(efp);
+  return 0;
+}
+\end{cchunk}

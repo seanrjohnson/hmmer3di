@@ -1,0 +1,241 @@
+\begin{sreapi}
+\hypertarget{func:esl_msaweight_PB()}
+{\item[int esl\_msaweight\_PB(ESL\_MSA *msa)]}
+
+Given a multiple alignment \ccode{msa}, calculate sequence
+weights according to the position-based weighting
+algorithm (Henikoff and Henikoff, JMB 243:574-578,
+1994). These weights are stored internally in the \ccode{msa}
+object, replacing any weights that may have already been
+there. Weights are $\geq 0$ and they sum to \ccode{msa->nseq}.
+
+The Henikoffs' algorithm is defined for ungapped
+alignments. It does not give rules for dealing with
+gaps, nor for degenerate residue symbols. The rule here
+is to ignore these, and moreover (in digital mode
+alignments, in order to deal with deep gappy alignments)
+to only consider alignment columns that are "consensus"
+(defined below).  This means that longer sequences
+initially get more weight; hence we do a "double
+normalization" in which the weights are first divided by
+sequence length in canonical residues (to get the
+average weight per residue, to compensate for that
+effect), then normalized to sum to nseq.
+
+The \ccode{msa} may be in either digitized or text mode. The
+weighting algorithm is subtly different depending on
+this mode. Digital mode is preferred. The digital mode
+algorithm handles deep gappy alignments better (it only
+considers consensus columns, not all columns), it deals
+with degenerate residue symbols (by ignoring them, like
+it ignores gaps), and it's much faster. In text mode,
+the algorithm simply uses the 26 letters as "residues"
+(case-insensitively), and ignores all other residues as
+gaps.
+
+PB weights require $O(NL)$ time and $O(LK)$ memory, for
+an alignment of $L$ columns, $N$ sequences, and alphabet
+size $K$.
+
+Consensus columns (for the digital alignment version)
+are determined as follows:
+
+1. if the MSA has RF consensus column annotation, use it.
+
+2. else, use HMMER's rules (fragthresh, symfrac):
+- define sequence fragments as those with aligned
+lengths where fractional span (l-r+1)/L \ccode{ fragthresh
+for leftmost residue position l and rightmost r;
+- count \% residue occupancy per column ignoring
+external gaps for fragments; 
+- define consensus columns as those with $\geq$
+symfrac residue occupancy.
+Defaults are fragthresh = 0.5, symfrac = 0.5.
+
+3. if all else fails, use all columns.
+
+Additionally, at step 2, if the alignment is very deep
+(}50000 sequences by default), we attempt to define
+consensus columns from a statistical sample (of 10,000
+seqs by default). This is a speed optimization. It can
+fail in a pathological case where the alignment contains
+a ridiculous number of fragments piled up on one
+subsequence. (Some DNA repeats can be this way.)  If we
+get >5000 fragments in the sample (by default), we use
+all sequences, not a subsample.
+
+All the parameters mentioned with default parameters can
+be changed using the \ccode{esl\_msaweight\_PB\_adv()} "advanced"
+version.
+
+Using RF-annotated consensus columns by default is not
+always desirable. In HMMER and Infernal, default "fast"
+model construction may define a different set of
+consensus columns than Easel does, which means that the
+same MSA can give different parameterizations, depending
+on whether that MSA has RF annotation or not. We decided
+this is undesirable [HMMER iss #180]. Both HMMER and
+Infernal use esl_msaweight_PB_adv(), using a
+ESL_MSAWEIGHT_CFG that sets ignore_rf to TRUE in
+default, FALSE with --hand.
+
+Returns \ccode{eslOK} on success. \ccode{msa->wgt[]} now contains weights for
+each sequence. \ccode{eslMSA\_HASWGTS} flag is raised in
+\ccode{msa->flags}. 
+
+Throws \ccode{eslEMEM} on allocation error, in which case \ccode{msa} is
+returned unmodified.
+
+
+
+\hypertarget{func:esl_msaweight_PB_adv()}
+{\item[int esl\_msaweight\_PB\_adv(const ESL\_MSAWEIGHT\_CFG *cfg, ESL\_MSA *msa, ESL\_MSAWEIGHT\_DAT *dat)]}
+
+Same as \ccode{esl\_msaweight\_PB()} but only takes digital-mode
+MSAs, and can optionally take customized parameters
+\ccode{cfg}, and optionally collect data about the computation
+in \ccode{dat}.
+
+Returns \ccode{eslOK} on success. \ccode{msa->wgt[]} now contains weights for
+each sequence. \ccode{eslMSA\_HASWGTS} flag is raised in
+\ccode{msa->flags}.  \ccode{dat}, if provided, contains data about
+stuff that happened during the weight computation.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_msaweight_GSC()}
+{\item[int esl\_msaweight\_GSC(ESL\_MSA *msa)]}
+
+Given a multiple sequence alignment \ccode{msa}, calculate
+sequence weights according to the
+Gerstein/Sonnhammer/Chothia algorithm. These weights
+are stored internally in the \ccode{msa} object, replacing
+any weights that may have already been there. Weights
+are $\geq 0$ and they sum to \ccode{msa->nseq}.
+
+The \ccode{msa} may be in either digitized or text mode.
+Digital mode is preferred, so that distance calculations
+used by the GSC algorithm are robust against degenerate
+residue symbols.
+
+This is an implementation of Gerstein et al., "A method to
+weight protein sequences to correct for unequal
+representation", JMB 236:1067-1078, 1994.
+
+The algorithm is $O(N^2)$ memory (it requires a pairwise
+distance matrix) and $O(N^3 + LN^2)$ time ($N^3$ for a UPGMA
+tree building step, $LN^2$ for distance matrix construction)
+for an alignment of N sequences and L columns. 
+
+In the current implementation, the actual memory
+requirement is dominated by two full NxN distance
+matrices (one tmp copy in UPGMA, and one here): for
+8-byte doubles, that's $16N^2$ bytes. To keep the
+calculation under memory limits, don't process large
+alignments: max 1400 sequences for 32 MB, max 4000
+sequences for 256 MB, max 8000 seqs for 1 GB. Watch
+out, because Pfam alignments can easily blow this up.
+
+Returns \ccode{eslOK} on success, and the weights inside \ccode{msa} have been
+modified.  
+
+Throws \ccode{eslEINVAL} if the alignment data are somehow invalid and
+distance matrices can't be calculated. \ccode{eslEMEM} on an
+allocation error. In either case, the original \ccode{msa} is
+left unmodified.
+
+
+
+\hypertarget{func:esl_msaweight_BLOSUM()}
+{\item[int esl\_msaweight\_BLOSUM(ESL\_MSA *msa, double maxid)]}
+
+Given a multiple sequence alignment \ccode{msa} and an identity
+threshold \ccode{maxid}, calculate sequence weights using the
+BLOSUM algorithm (Henikoff and Henikoff, PNAS
+89:10915-10919, 1992). These weights are stored
+internally in the \ccode{msa} object, replacing any weights
+that may have already been there. Weights are $\geq 0$
+and they sum to \ccode{msa->nseq}.
+
+The algorithm does a single linkage clustering by
+fractional id, defines clusters such that no two clusters
+have a pairwise link $\geq$ \ccode{maxid}), and assigns
+weights of $\frac{1}{M_i}$ to each of the $M_i$
+sequences in each cluster $i$. The \ccode{maxid} threshold
+is a fractional pairwise identity, in the range
+$0..1$.
+
+The \ccode{msa} may be in either digitized or text mode.
+Digital mode is preferred, so that the pairwise identity
+calculations deal with degenerate residue symbols
+properly.
+
+Returns \ccode{eslOK} on success, and the weights inside \ccode{msa} have been
+modified. 
+
+Throws \ccode{eslEMEM} on allocation error. \ccode{eslEINVAL} if a pairwise
+identity calculation fails because of corrupted sequence 
+data. In either case, the \ccode{msa} is unmodified.
+
+
+
+\hypertarget{func:esl_msaweight_IDFilter()}
+{\item[int esl\_msaweight\_IDFilter(const ESL\_MSA *msa, double maxid, ESL\_MSA **ret\_newmsa)]}
+
+Remove sequences in \ccode{msa} that are $\geq$ \ccode{maxid}
+fractional identity to another aligned sequence.  Return
+the filtered alignment in \ccode{*ret\_newmsa}.  The original
+\ccode{msa} is not changed.
+
+When a pair of sequences has $\geq$ \ccode{maxid} fractional
+identity, the default rule for which of them we keep
+differs depending on whether the \ccode{msa} is in digital or
+text mode. We typically manipulate biosequence
+alignments in digital mode. In digital mode, the default
+rule (called "conscover") is to prefer the sequence with
+an alignment span that covers more consensus columns.
+(Where "span" is defined by the column coordinates of
+the leftmost and rightmost aligned residues of the
+sequence; fragment definition rules also use the concept
+of "span".)  In the simpler text mode, the rule is to
+keep the earlier sequence and discard the later, in the
+order the seqs come in the alignment. The conscover rule
+is designed to avoid keeping fragments, while trying not
+to bias the insertion/deletion statistics of the
+filtered alignment. To use different preference rules in
+digital mode alignments, see the more customizable
+\ccode{esl\_msaweight\_IDFilter\_adv()}.
+
+Fractional identity is calculated by
+\ccode{esl\_dst\_{CX}PairID()}, which defines the denominator of
+the calculation as MIN(rlen1, rlen2).
+
+Unparsed Stockholm markup is not propagated into the new
+filtered alignment.
+
+Throws \ccode{eslEMEM} on allocation error. \ccode{eslEINVAL} if a pairwise
+identity calculation fails because of corrupted sequence 
+data. In either case, the \ccode{msa} is unmodified.
+
+
+
+\hypertarget{func:esl_msaweight_IDFilter_adv()}
+{\item[int esl\_msaweight\_IDFilter\_adv(const ESL\_MSAWEIGHT\_CFG *cfg, const ESL\_MSA *msa, double maxid, ESL\_MSA **ret\_newmsa)]}
+
+Same as \ccode{esl\_msaweight\_IDFilter()} but customizable with
+optional custom parameters in \ccode{cfg}. Requires digital
+mode alignment.
+
+In particular, \ccode{cfg} can be used to select two other
+rules for sequence preference, besides the default
+"conscover" rule: random preference, or preferring the
+lower-index sequence (same as the rule used in text mode
+alignments).
+
+For the "conscover" rule, consensus column determination
+can be customized the same way as in PB weighting.
+
+
+\end{sreapi}
+

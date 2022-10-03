@@ -1,0 +1,47 @@
+\begin{cchunk}
+/* compile: gcc -g -Wall -I. -o example -DeslSQ_EXAMPLE esl_sq.c easel.c
+ * run:     ./example
+ */
+#include <stdio.h>
+#include <string.h>
+#include "easel.h"
+#include "esl_sq.h"
+
+int main(void)
+{
+  ESL_SQ     *sq1, *sq2;
+  char       *name    = "seq1";
+  char       *acc     = "XX00001";
+  char       *desc    = "This is a test.";
+  char       *testseq = "GGGAAATTTCCC";
+  char       *ss      = "<<<......>>>";
+  int         n       = strlen(testseq);
+
+  /* Creating an ESL_SQ from text info: */
+  sq1 = esl_sq_CreateFrom(name, testseq, desc, acc, ss); /* desc, acc, or ss may be NULL */
+  
+  /* Building up a ESL_SQ yourself: */
+  sq2 = esl_sq_Create();
+  esl_sq_FormatName     (sq2, "seq%d", 1);
+  esl_sq_FormatAccession(sq2, "XX%05d", 1);
+  esl_sq_FormatDesc     (sq2, "This %s a test", "is");
+  esl_sq_GrowTo         (sq2, n);
+  strcpy(sq2->seq, testseq);
+  esl_strdup(ss, -1, &(sq2->ss));  
+  sq2->n = n;
+
+  /* Accessing the information */
+  printf("Name:        %s\n", sq2->name);
+  printf("Accession:   %s\n", sq2->acc);
+  printf("Description: %s\n", sq2->desc);
+  printf("Sequence:    %s\n", sq2->seq);
+  printf("Structure:   %s\n", sq2->ss);
+  printf("Residue 3:   %c\n", sq2->seq[2]); /* note 0..n-1 coords */
+  printf("Structure 3: %c\n", sq2->ss[2]);  /* same for ss        */
+  
+  /* Freeing the structures */
+  esl_sq_Destroy(sq1);
+  esl_sq_Destroy(sq2);
+  return 0;
+}
+\end{cchunk}

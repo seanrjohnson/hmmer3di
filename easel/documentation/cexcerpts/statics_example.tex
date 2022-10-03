@@ -1,0 +1,12 @@
+\begin{cchunk}
+static int buffer_create           (ESL_BUFFER **ret_bf);
+static int buffer_init_file_mmap   (ESL_BUFFER *bf, esl_pos_t filesize);
+static int buffer_init_file_slurped(ESL_BUFFER *bf, esl_pos_t filesize);
+static int buffer_init_file_basic  (ESL_BUFFER *bf);
+
+static int buffer_refill   (ESL_BUFFER *bf, esl_pos_t nmin);
+static int buffer_countline(ESL_BUFFER *bf, esl_pos_t *opt_nc, esl_pos_t *opt_nskip);
+static int buffer_skipsep  (ESL_BUFFER *bf, const char *sep);
+static int buffer_newline  (ESL_BUFFER *bf);
+static int buffer_counttok (ESL_BUFFER *bf, const char *sep, esl_pos_t *ret_nc);
+\end{cchunk}

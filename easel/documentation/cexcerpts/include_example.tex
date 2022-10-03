@@ -1,0 +1,22 @@
+\begin{cchunk}
+#include "esl_config.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <signal.h>   // one of the utests uses alarm() to catch an infinite loop bug
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef _POSIX_VERSION
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#endif /* _POSIX_VERSION */
+
+#include "easel.h"
+#include "esl_mem.h"
+
+#include "esl_buffer.h"
+\end{cchunk}

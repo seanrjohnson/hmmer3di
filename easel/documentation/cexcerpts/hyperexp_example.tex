@@ -1,0 +1,57 @@
+\begin{cchunk}
+#include <stdio.h>
+#include "easel.h"
+#include "esl_random.h"
+#include "esl_histogram.h"
+#include "esl_hyperexp.h"
+
+int
+main(int argc, char **argv)
+{
+  ESL_RANDOMNESS *r;		/* source of random numbers        */
+  ESL_HISTOGRAM  *h;		/* histogram to store the data     */
+  ESL_HYPEREXP   *hxp;		/* hyperexponential to sample from */
+  ESL_HYPEREXP   *ehxp;		/* estimated hyperexponential      */
+  double      x;		/* sampled data point              */
+  int         n = 100000;	/* number of samples               */
+  double     *data;
+  int         ndata;
+  int         i;
+
+  hxp = esl_hyperexp_Create(3);
+  hxp->mu = -2.0;
+  hxp->q[0]      = 0.6;    hxp->q[1]      = 0.3;   hxp->q[2]      = 0.1; 
+  hxp->lambda[0] = 1.0;    hxp->lambda[1] = 0.3;   hxp->lambda[2] = 0.1;
+
+  r   = esl_randomness_Create(0);
+  h   = esl_histogram_CreateFull(hxp->mu, 100, 1.0);
+
+  for (i = 0; i < n; i++)
+    {
+      x    = esl_hxp_Sample(r, hxp);
+      esl_histogram_Add(h, x);
+    }
+  esl_histogram_GetData(h, &data, &ndata);
+
+  /* Plot the empirical (sampled) and expected survivals */
+  esl_histogram_PlotSurvival(stdout, h);
+  esl_hxp_Plot(stdout, hxp, &esl_hxp_surv, h->xmin, h->xmax, 0.1);
+
+  /* ML fit to complete data, and plot fitted survival curve */
+  ehxp = esl_hyperexp_Create(3);
+  esl_hxp_FitGuess(data, ndata, ehxp);
+  esl_hxp_FitComplete(data, ndata, ehxp);
+  esl_hxp_Plot(stdout, ehxp, &esl_hxp_surv,  h->xmin, h->xmax, 0.1);
+
+  /* ML fit to binned data, plot fitted survival curve  */
+  esl_hxp_FitGuessBinned(h, ehxp);
+  esl_hxp_FitCompleteBinned(h, ehxp);
+  esl_hxp_Plot(stdout, ehxp, &esl_hxp_surv,  h->xmin, h->xmax, 0.1);
+
+  esl_randomness_Destroy(r);
+  esl_histogram_Destroy(h);
+  esl_hyperexp_Destroy(hxp);
+  esl_hyperexp_Destroy(ehxp);
+  return 0;
+}
+\end{cchunk}

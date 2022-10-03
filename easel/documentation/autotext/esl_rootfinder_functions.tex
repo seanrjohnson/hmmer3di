@@ -1,0 +1,113 @@
+\begin{sreapi}
+\hypertarget{func:esl_rootfinder_Create()}
+{\item[ESL\_ROOTFINDER * esl\_rootfinder\_Create(int (*func)(double, void*, double*), void *params)]}
+
+Create a rootfinder to find a root of a function $f(x) = 0$.
+\ccode{(*func)()} is a pointer to an implementation of the
+function $f(x)$. \ccode{params} is a generic pointer to any
+parameters or storage needed in \ccode{(*func)()} other than
+the value of $x$. 
+
+Caller implements a \ccode{func()} that takes three arguments.
+The first two are the value \ccode{x}, and a void pointer to
+any additional parameters that $f(x)$ depends on. The
+result, $f(x)$, is returned via the third argument. This
+function must return \ccode{eslOK} to indicate success. Upon
+error, it may throw any error code it wishes.
+
+
+Returns pointer to a new \ccode{ESL\_ROOTFINDER} structure.
+
+Throws \ccode{NULL} on allocation failure.
+
+
+\hypertarget{func:esl_rootfinder_CreateFDF()}
+{\item[ESL\_ROOTFINDER * esl\_rootfinder\_CreateFDF(int (*fdf)(double, void*, double*, double*), void *params)]}
+
+Create a rootfinder that will find 
+a root of a function $f(x) = 0$ using first derivative
+information $f'(x)$. 
+
+Caller provides a pointer \ccode{*fdf()} to a function that
+takes four arguments. The first two are the current \ccode{x}
+value, and a void pointer to any additional parameters
+that $f(x)$ depends on. \ccode{*fdf()} calculates the function
+$f(x)$ and the derivative $f'(x)$ and returns them
+through the remaining two arguments.
+
+Returns pointer to a new \ccode{ESL\_ROOTFINDER} structure.
+
+Throws \ccode{NULL} on allocation failure.
+
+
+\hypertarget{func:esl_rootfinder_SetBrackets()}
+{\item[int esl\_rootfinder\_SetBrackets(ESL\_ROOTFINDER *R, double xl, double xr)]}
+
+Declare that a root is in the open interval 
+\ccode{(xl..xr)}. 
+
+The function will be evaluated at both points.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{xl,xr} cannot bracket a root,
+because $f(x_l)$ and $f(x_r)$ do not have opposite
+signs.
+
+Additionally, if either evaluation fails in the
+caller-provided function, the error code from that
+failure will be thrown.
+
+
+\hypertarget{func:esl_root_Bisection()}
+{\item[int esl\_root\_Bisection(ESL\_ROOTFINDER *R, double xl, double xr, double *ret\_x)]}
+
+Find a root in the open interval \ccode{xl..xr} by the bisection method,
+and return it in \ccode{ret\_x}. 
+
+The bisection method is guaranteed to succeed, provided
+that \ccode{xl},\ccode{xr} do indeed bracket a root, though it may
+be slow.
+
+The rootfinder \ccode{R} can be created either by
+\ccode{esl\_rootfinder\_Create()} or
+\ccode{esl\_rootfinder\_CreateFDF()}; if the latter (if the
+function in the rootfinder \ccode{R} includes derivative
+information), the bisection method will just ignore
+the derivative. 
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_x} points to a root.
+
+Throws \ccode{eslEINVAL} if \ccode{xl,xr} do not bracket a root. 
+\ccode{eslENOHALT} if the method exceeds the maximum number of
+iterations set in \ccode{R}. 
+
+Additionally, any failure code that the caller-provided
+function $f(x)$ throws.
+
+
+\hypertarget{func:esl_root_NewtonRaphson()}
+{\item[int esl\_root\_NewtonRaphson(ESL\_ROOTFINDER *R, double guess, double *ret\_x)]}
+
+Find a root by the Newton/Raphson method, starting from
+an initial guess \ccode{guess}. Return the root in \ccode{ret\_x}.
+
+The Newton/Raphson method is not guaranteed to succeed,
+but when it does, it is much faster than bisection.
+
+Newton/Raphson uses first derivative information, so the
+rootfinder \ccode{R} must be created with
+\ccode{esl\_rootfinder\_CreateFDF()} for a function that evaluates
+both $f(x)$ and $f'(x)$.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_x} points to a root.
+
+Throws \ccode{eslENOHALT} if the method exceeds the maximum number of
+iterations set in \ccode{R}. 
+
+Additionally, any failure code that the caller-provided
+function $f(x)$ throws.
+
+
+\end{sreapi}
+

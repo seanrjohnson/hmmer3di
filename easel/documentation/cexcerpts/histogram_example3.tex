@@ -1,0 +1,46 @@
+\begin{cchunk}
+#include "easel.h"
+#include "esl_random.h"
+#include "esl_histogram.h"
+#include "esl_gumbel.h"
+#include "esl_exponential.h"
+
+int
+main(int argc, char **argv)
+{
+  ESL_RANDOMNESS *r  = esl_randomness_Create(0);
+  ESL_HISTOGRAM  *h  = esl_histogram_CreateFull(-100, 100, 0.2);
+  int     nsamples    = 10000;
+  double  mu          = 10.0;
+  double  lambda      = 0.8;
+  double  params[2];
+  int     i;
+  double  x;
+  double *xv;
+  int     n;
+  double  G, Gp, X2, X2p;
+
+  for (i = 0; i < nsamples; i++) {
+    x = esl_gumbel_Sample(r, mu, lambda);
+    esl_histogram_Add(h, x);
+  }
+
+  esl_histogram_GetTailByMass(h, 0.1, &xv, &n, NULL); /* fit to 10% tail */
+  esl_exp_FitComplete(xv, n, &mu, &lambda);
+
+  params[0] = mu;
+  params[1] = lambda;
+  esl_histogram_SetExpectedTail(h, mu, 0.1, &esl_exp_generic_cdf, &params);
+
+  esl_histogram_Write(stdout, h);
+  if (esl_histogram_Goodness(h, 0, NULL, &G, &Gp, &X2, &X2p) != eslOK)
+    esl_fatal("goodness of fit testing failed");
+
+  printf("G   = %f  p = %f\n", G, Gp);
+  printf("X^2 = %f  p = %f\n", X2, X2p);
+
+  esl_histogram_Destroy(h);
+  esl_randomness_Destroy(r);
+  return 0;
+}
+\end{cchunk}

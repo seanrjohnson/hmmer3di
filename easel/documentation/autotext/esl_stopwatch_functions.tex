@@ -1,0 +1,94 @@
+\begin{sreapi}
+\hypertarget{func:esl_stopwatch_Create()}
+{\item[ESL\_STOPWATCH * esl\_stopwatch\_Create(void)]}
+
+Creates a new stopwatch.
+
+Returns ptr to a new \ccode{ESL\_STOPWATCH} object; caller is
+responsible for free'ing it with 
+\ccode{esl\_stopwatch\_Destroy()}.
+
+Throws NULL on allocation failure.
+
+
+\hypertarget{func:esl_stopwatch_Destroy()}
+{\item[void esl\_stopwatch\_Destroy(ESL\_STOPWATCH *w)]}
+
+Frees an \ccode{ESL\_STOPWATCH}.
+
+
+\hypertarget{func:esl_stopwatch_Start()}
+{\item[int esl\_stopwatch\_Start(ESL\_STOPWATCH *w)]}
+
+Start a stopwatch. This sets the base 
+for elapsed, cpu, and system time difference
+calculations by subsequent calls to
+\ccode{esl\_stopwatch\_Stop()}.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_stopwatch_Stop()}
+{\item[int esl\_stopwatch\_Stop(ESL\_STOPWATCH *w)]}
+
+Stop a stopwatch. Record and store elapsed,
+cpu, and system time difference relative to the
+last call to \ccode{esl\_stopwatch\_Start()}.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_stopwatch_Display()}
+{\item[int esl\_stopwatch\_Display(FILE *fp, ESL\_STOPWATCH *w, char *prefix)]}
+
+Output a usage summary line from a stopped
+stopwatch, showing elapsed, cpu, and system time
+between the last calls to 
+\ccode{esl\_stopwatch\_Start()} and \ccode{esl\_stopwatch\_Stop()}.
+
+The string \ccode{prefix} will be prepended to the output
+line. Use \ccode{""} to prepend nothing. If \ccode{prefix} is NULL,
+a default \ccode{"CPU Time: "} prefix is used.
+
+For \ccode{prefix} = \ccode{"CPU Time: "} an example output line is:\\
+\ccode{CPU Time: 142.55u 7.17s 00:02:29.72 Elapsed: 00:02:35}
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error, such as filled disk.
+
+
+\hypertarget{func:esl_stopwatch_GetElapsed()}
+{\item[double esl\_stopwatch\_GetElapsed(ESL\_STOPWATCH *w)]}
+
+After watch \ccode{w} is Stop()'ed, calling
+\ccode{esl\_stopwatch\_GetElapsed(w)} returns the elapsed time
+in seconds.
+
+The resolution is system-dependent. 
+
+
+\hypertarget{func:esl_stopwatch_Include()}
+{\item[int esl\_stopwatch\_Include(ESL\_STOPWATCH *master, ESL\_STOPWATCH *w)]}
+
+Merge the cpu and system times from a slave into
+a master stopwatch. Both watches must be
+stopped, and should not be stopped again unless
+You Know What You're Doing.
+
+Elapsed time is not merged. Master is assumed
+to be keeping track of the wall clock (real) time,
+and the slave/worker watch is ignored.
+
+Useful in at least two cases. One is in 
+PVM, where we merge in the stopwatch(es) from separate
+process(es) in a cluster. A second is in 
+threads, for broken pthreads/times() implementations
+that lose track of cpu times used by spawned
+threads.
+
+Returns \ccode{eslOK} on success.
+
+
+\end{sreapi}
+

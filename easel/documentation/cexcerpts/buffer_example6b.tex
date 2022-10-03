@@ -1,0 +1,37 @@
+\begin{cchunk}
+int
+main(int argc, char **argv)
+{
+  char       *filename = argv[1];
+  int         blockcount = 0;
+  int         linecount  = 0;
+  int         xcount     = 0;
+  int         i,j;
+  ESL_BUFFER *bf;
+  char      **lines;
+  esl_pos_t  *lens;
+  esl_pos_t   nlines;
+  int         status;
+
+  status = esl_buffer_Open(filename, "TESTDIR", &bf);
+  if      (status == eslENOTFOUND) esl_fatal("open failed: %s",   bf->errmsg);
+  else if (status == eslFAIL)      esl_fatal("gzip -dc failed: %s", bf->errmsg);
+  else if (status != eslOK)        esl_fatal("open failed with error code %d", status);
+
+  while ( (status = example_read_lineblock(bf, &lines, &lens, &nlines)) == eslOK)
+    {
+      blockcount++;
+      linecount += nlines;
+      for (i = 0; i < nlines; i++)
+	for (j = 0; j < lens[i]; j++) 
+	  if (lines[i][j] == 'x') xcount++;
+
+      free(lines);
+      free(lens);
+    }
+  if (status != eslEOF) esl_fatal("bad MSA format: %s", bf->errmsg);
+  esl_buffer_Close(bf);
+  printf("Counted %d x's in %d blocks of %d total lines\n", xcount, blockcount, linecount);
+  return 0;
+}
+\end{cchunk}

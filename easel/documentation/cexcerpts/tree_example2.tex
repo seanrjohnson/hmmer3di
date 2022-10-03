@@ -1,0 +1,25 @@
+\begin{cchunk}
+/* To compile: gcc -g -Wall -o example -I. -DeslTREE_EXAMPLE2 esl_tree.c esl_dmatrix.c esl_msa.c easel.c -lm
+ *         or: gcc -g -Wall -o example -I. -L. -DeslTREE_EXAMPLE2 esl_tree.c -leasel -lm
+ *     To run: ./example <Newick file>
+ */
+#include "easel.h"
+#include "esl_msa.h"
+#include "esl_distance.h"
+#include "esl_tree.h"
+
+int main(int argc, char **argv)
+{
+  ESL_TREE    *T;
+  char         errbuf[eslERRBUFSIZE];
+  FILE        *fp;
+
+  if ((fp = fopen(argv[1], "r"))           == NULL) esl_fatal("Failed to open %s", argv[1]);
+  if (esl_tree_ReadNewick(fp, errbuf, &T) != eslOK) esl_fatal("Failed to read tree: %s", errbuf);
+  esl_tree_WriteNewick(stdout, T);
+
+  esl_tree_Destroy(T);
+  fclose(fp);
+  return eslOK;
+}
+\end{cchunk}

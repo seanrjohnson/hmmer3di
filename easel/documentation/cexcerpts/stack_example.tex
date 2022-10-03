@@ -1,0 +1,23 @@
+\begin{cchunk}
+/* compile: gcc -g -Wall -I. -o example -DeslSTACK_EXAMPLE esl_stack.c easel.c -lm
+ * run:     ./example
+ */
+#include "easel.h"
+#include "esl_stack.h"
+
+int
+main(void)
+{
+  ESL_STACK *ns;
+  int        x;
+
+  ns = esl_stack_ICreate();
+  esl_stack_IPush(ns, 42);
+  esl_stack_IPush(ns, 7);
+  esl_stack_IPush(ns, 3);
+  while (esl_stack_IPop(ns, &x) != eslEOD) 
+    printf("%d\n", x);
+  esl_stack_Destroy(ns);   
+  return 0;
+}
+\end{cchunk}

@@ -1,0 +1,33 @@
+\begin{cchunk}
+/* compile: gcc -g -Wall -I. -o example -DeslSTOPWATCH_EXAMPLE esl_stopwatch.c easel.c -lm
+ * run:     ./example
+ */
+#include "easel.h"
+#include "esl_stopwatch.h"
+
+int 
+main(void)
+{
+  ESL_STOPWATCH *w;
+  double         t = 0.;
+  
+  w = esl_stopwatch_Create(); 
+
+  /* This tests the minimum *practical* resolution of the clock,
+   * inclusive of overhead of calling the stopwatch functions.
+   * It gives me ~0.1 usec (12 Jan 2016).
+   */
+  esl_stopwatch_Start(w);
+  while (t == 0.) 
+    {
+      esl_stopwatch_Stop(w);
+      t = esl_stopwatch_GetElapsed(w);
+    }
+
+  printf("Elapsed time clock has practical resolution of around: %g sec\n", t);
+
+  esl_stopwatch_Display(stdout, w, "CPU Time: ");
+  esl_stopwatch_Destroy(w);
+  return 0;
+}
+\end{cchunk}

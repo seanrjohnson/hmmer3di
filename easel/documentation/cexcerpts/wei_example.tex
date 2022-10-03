@@ -1,0 +1,49 @@
+\begin{cchunk}
+#include <stdio.h>
+#include "easel.h"
+#include "esl_random.h"
+#include "esl_histogram.h"
+#include "esl_weibull.h"
+
+int
+main(int argc, char **argv)
+{
+  double  mu        = -2.1;         
+  double  lambda    =  1.0;         
+  double  tau       =  0.8;	   
+  ESL_HISTOGRAM  *h = esl_histogram_CreateFull(mu, 100., 0.1);
+  ESL_RANDOMNESS *r = esl_randomness_Create(0);
+  int     n         = 10000; 
+  double  emu, elambda, etau;
+  double *data;
+  int     ndata;
+  double  x;
+  int     i;
+
+  for (i = 0; i < n; i++)
+    {
+      x    = esl_wei_Sample(r, mu, lambda, tau);
+      esl_histogram_Add(h, x);
+    }
+  esl_histogram_GetData(h, &data, &ndata);
+  
+  /* Plot the empirical (sampled) and expected survivals */
+  esl_histogram_PlotSurvival(stdout, h);
+  esl_wei_Plot(stdout, mu, lambda, tau,
+	       &esl_wei_surv,  h->xmin, h->xmax, 0.1);
+
+  /* ML fit to complete data, and plot fitted survival curve */
+  esl_wei_FitComplete(data, ndata, &emu, &elambda, &etau);
+  esl_wei_Plot(stdout, emu, elambda, etau,
+	       &esl_wei_surv,  h->xmin, h->xmax, 0.1);
+
+  /* ML fit to binned data, plot fitted survival curve  */
+  esl_wei_FitCompleteBinned(h, &emu, &elambda, &etau);
+  esl_wei_Plot(stdout, emu, elambda, etau,
+	       &esl_wei_surv,  h->xmin, h->xmax, 0.1);
+
+  esl_randomness_Destroy(r);
+  esl_histogram_Destroy(h);
+  return 0;
+}
+\end{cchunk}

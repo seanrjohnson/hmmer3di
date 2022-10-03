@@ -1,0 +1,184 @@
+\begin{sreapi}
+\hypertarget{func:esl_rmx_SetWAG()}
+{\item[int esl\_rmx\_SetWAG(ESL\_DMATRIX *Q, double *pi)]}
+
+Sets a $20 \times 20$ rate matrix \ccode{Q} to WAG parameters.
+The caller allocated \ccode{Q}.
+
+If \ccode{pi} is non-\ccode{NULL}, it provides a vector of 20 amino
+acid stationary probabilities in Easel alphabetic order,
+A..Y, and the WAG stationary probabilities are set to
+these desired $\pi_i$. If \ccode{pi} is \ccode{NULL}, the default
+WAG stationary probabilities are used.
+
+The WAG parameters are a maximum likelihood
+parameterization obtained by Whelan and Goldman
+\citep{WhelanGoldman01}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL} if \ccode{Q} isn't a 20x20 general matrix; and
+the state of \ccode{Q} is undefined.
+
+
+\hypertarget{func:esl_rmx_SetJukesCantor()}
+{\item[int esl\_rmx\_SetJukesCantor(ESL\_DMATRIX *Q)]}
+
+Sets a 4x4 rate matrix to a Jukes-Cantor model,
+scaled to units of 1t = 1.0 substitutions/site.
+
+
+
+\hypertarget{func:esl_rmx_SetKimura()}
+{\item[int esl\_rmx\_SetKimura(ESL\_DMATRIX *Q, double alpha, double beta)]}
+
+Sets a 4x4 rate matrix to a Kimura 2-parameter
+model, given transition and transversion 
+relative rates \ccode{alpha} and \ccode{beta}, respectively,
+scaled to units of 1t = 1.0 substitutions/site.
+
+
+
+\hypertarget{func:esl_rmx_SetF81()}
+{\item[int esl\_rmx\_SetF81(ESL\_DMATRIX *Q, double *pi)]}
+
+Sets a 4x4 rate matrix to the F81 model (aka
+equal-input model) given stationary base 
+compositions \ccode{pi}, 
+scaled to units of 1t = 1.0 substitutions/site.
+
+
+\hypertarget{func:esl_rmx_SetHKY()}
+{\item[int esl\_rmx\_SetHKY( ESL\_DMATRIX *Q, double *pi, double alpha, double beta)]}
+
+Given stationary base composition \ccode{pi} for ACGT, and
+transition and transversion relative rates \ccode{alpha} and
+\ccode{beta} respectively, sets the matrix \ccode{Q} to be the
+corresponding HKY (Hasegawa/Kishino/Yano) DNA rate
+matrix, scaled in units of 1t= 1.0 substitutions/site
+\citep{Hasegawa85}.        
+
+Returns \ccode{eslOK} 
+
+
+
+\hypertarget{func:esl_rmx_ValidateP()}
+{\item[int esl\_rmx\_ValidateP(ESL\_DMATRIX *P, double tol, char *errbuf)]}
+
+Validates a conditional probability matrix \ccode{P}, whose
+elements $P_{ij}$ represent conditional probabilities
+$P(j \mid i)$; for example in a first-order Markov
+chain, or a continuous-time Markov transition process
+where \ccode{P} is for a particular $t$.
+
+Rows must sum to one, and each element $P_{ij}$ is a
+probability $0 \leq P_{ij} \leq 1$.
+
+\ccode{tol} specifies the floating-point tolerance to which
+the row sums must equal one: \ccode{fabs(sum-1.0) <= tol}.
+
+\ccode{errbuf} is an optional error message buffer. The caller
+may pass \ccode{NULL} or a pointer to a buffer of at least
+\ccode{eslERRBUFSIZE} characters.
+
+Returns \ccode{eslOK} on successful validation. 
+\ccode{eslFAIL} on failure, and if a non-\ccode{NULL} \ccode{errbuf} was
+provided by the caller, a message describing
+the reason for the failure is put there.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_rmx_ValidateQ()}
+{\item[int esl\_rmx\_ValidateQ(ESL\_DMATRIX *Q, double tol, char *errbuf)]}
+
+Validates an instantaneous rate matrix \ccode{Q} for a
+continuous-time Markov process, whose elements $q_{ij}$
+represent instantaneous transition rates $i \rightarrow
+j$. 
+
+Rows satisfy the condition that
+$q_{ii} = -\sum_{i \neq j} q_{ij}$, and also
+that $q_{ij} \geq 0$ for all $j \neq i$. 
+
+\ccode{tol} specifies the floating-point tolerance to which
+that condition must hold: \ccode{fabs(sum-q\_ii) <= tol}.
+
+\ccode{errbuf} is an optional error message buffer. The caller
+may pass \ccode{NULL} or a pointer to a buffer of at least
+\ccode{eslERRBUFSIZE} characters.
+
+Returns \ccode{eslOK} on successful validation. 
+\ccode{eslFAIL} on failure, and if a non-\ccode{NULL} \ccode{errbuf} was
+provided by the caller, a message describing
+the reason for the failure is put there.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_rmx_ScaleTo()}
+{\item[int esl\_rmx\_ScaleTo(ESL\_DMATRIX *Q, double *pi, double unit)]}
+
+Rescales rate matrix \ccode{Q} so that expected substitution
+rate per dt is \ccode{unit}.
+
+Expected substitution rate is:
+$\sum_i \sum_j pi_i Q_ij  \forall i \neq j$
+
+\ccode{unit} typically taken to be 1.0, so time units are substitutions/site.
+An exception is PAM, where \ccode{unit} = 0.01 for 1 PAM unit.
+
+Returns \ccode{eslOK} on success, and matrix Q is rescaled.
+
+
+
+\hypertarget{func:esl_rmx_E2Q()}
+{\item[int esl\_rmx\_E2Q(ESL\_DMATRIX *E, double *pi, ESL\_DMATRIX *Q)]}
+
+Given a lower triangular matrix ($j<i$) of 
+residue exchangeabilities \ccode{E}, and a stationary residue
+frequency vector \ccode{pi}; assuming $E_{ij} = E_{ji}$;
+calculates a rate matrix \ccode{Q} as
+
+$Q_{ij} = E_{ij} * \pi_j$
+
+The resulting \ccode{Q} is not normalized to any particular
+number of substitutions/site/time unit. See
+\ccode{esl\_rmx\_ScaleTo()} for that.
+
+Returns \ccode{eslOK} on success; Q is calculated and filled in.
+
+
+
+\hypertarget{func:esl_rmx_RelativeEntropy()}
+{\item[double esl\_rmx\_RelativeEntropy(ESL\_DMATRIX *P, double *pi)]}
+
+Given a conditional substitution probability matrix \ccode{P},
+with stationary probabilities \ccode{pi}, calculate its
+relative entropy $H$:
+
+$H_t = \sum_{ij} P(j \mid i,t) \pi_i \log_2 \frac{P(j \mid i,t)} {\pi_j}$
+
+This assumes that the stationary probabilities are the
+same as the background (null model) probabilities.   
+
+Returns the relative entropy, $H$, in bits
+
+
+\hypertarget{func:esl_rmx_ExpectedScore()}
+{\item[double esl\_rmx\_ExpectedScore(ESL\_DMATRIX *P, double *pi)]}
+
+Given a conditional substitution probability matrix \ccode{P}
+with stationary probabilities \ccode{pi}, calculate its
+expected score:
+
+$ = \sum_{ij} \pi_j \pi_i \log_2 \frac{P(j \mid i,t)} {\pi_j}$
+
+This assumes that the stationary probabilities are the
+same as the background (null model) probabilities.   
+
+Returns the expected score, in bits
+
+
+\end{sreapi}
+

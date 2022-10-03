@@ -1,0 +1,661 @@
+\begin{sreapi}
+\hypertarget{func:esl_sqfile_Open()}
+{\item[int esl\_sqfile\_Open(const char *filename, int format, const char *env, ESL\_SQFILE **ret\_sqfp)]}
+
+Open a sequence file \ccode{filename} for reading. 
+The opened \ccode{ESL\_SQFILE} is returned through \ccode{ret\_sqfp}.
+
+The format of the file is asserted to be \ccode{format} (for
+example, \ccode{eslSQFILE\_FASTA}). If \ccode{format} is
+\ccode{eslSQFILE\_UNKNOWN} then the routine attempts to
+autodetect the file format.
+
+If \ccode{env} is non-NULL, it is the name of an environment
+variable that contains a colon-delimited list of
+directories in which we may find this \ccode{filename}.
+For example, if we had 
+\ccode{setenv BLASTDB /nfs/db/blast-db:/nfs/db/genomes/}
+in the environment, a database search application
+could pass "BLASTDB" as \ccode{env}.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_sqfp} points to a new
+open \ccode{ESL\_SQFILE}. Caller deallocates this object with
+\ccode{esl\_sqfile\_Close()}. 
+
+Returns \ccode{eslENOTFOUND} if \ccode{filename} can't be opened.
+
+Returns \ccode{eslEFORMAT} if the file is empty, or
+if autodetection is attempted and the format can't be
+determined.  
+
+On any error condition, \ccode{*ret\_sqfp} is returned NULL.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_sqfile_Close()}
+{\item[void esl\_sqfile\_Close(ESL\_SQFILE *sqfp)]}
+
+Closes an open \ccode{sqfp}.
+
+Returns (void).
+
+
+\hypertarget{func:esl_sqfile_OpenDigital()}
+{\item[int esl\_sqfile\_OpenDigital(const ESL\_ALPHABET *abc, const char *filename, int format, const char *env, ESL\_SQFILE **ret\_sqfp)]}
+
+Same as \ccode{esl\_sqfile\_Open()}, but we will expect all
+sequence input to conform to the digital alphabet \ccode{abc}.
+
+Normally, after opening the sequence file in digital
+mode, you'd read sequence into a digital \ccode{ESL\_SQ}.
+However, you don't actually have to. The state of the
+\ccode{ESL\_SQ} controls how the input is stored; the state of
+the \ccode{ESL\_SQFILE} controls how the input is validated.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_sqfp} points to a new
+open \ccode{ESL\_SQFILE}.
+
+Returns \ccode{eslENOTFOUND} if \ccode{filename} can't be opened.
+Returns \ccode{eslEFORMAT} if the file is empty, or if
+autodetection is attempted and the format can't be
+determined.  On any error conditions, \ccode{*ret\_sqfp} is
+returned NULL.
+
+Throws \ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_sqfile_SetDigital()}
+{\item[int esl\_sqfile\_SetDigital(ESL\_SQFILE *sqfp, const ESL\_ALPHABET *abc)]}
+
+Given an \ccode{ESL\_SQFILE} that's already been opened,
+configure it to expect subsequent input to conform
+to the digital alphabet \ccode{abc}.
+
+Calling \ccode{esl\_sqfile\_Open(); esl\_sqfile\_SetDigital()} is
+equivalent to \ccode{esl\_sqfile\_OpenDigital()}. The two-step
+version is useful when you need a
+\ccode{esl\_sqfile\_GuessAlphabet()} call in between, guessing
+the file's alphabet in text mode before you set it to
+digital mode.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_sqfile_GuessAlphabet()}
+{\item[int esl\_sqfile\_GuessAlphabet(ESL\_SQFILE *sqfp, int *ret\_type)]}
+
+After opening \ccode{sqfp}, attempt to guess what alphabet
+its sequences are in, by inspecting the first sequence
+in the file, and return this alphabet type in \ccode{*ret\_type}.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_type} is set to \ccode{eslDNA},
+\ccode{eslRNA}, or \ccode{eslAMINO}.
+
+Returns \ccode{eslENOALPHABET} if the alphabet can't be
+reliably guessed.
+
+Returns \ccode{eslEFORMAT} if a parse error is encountered.
+Call \ccode{esl\_sqfile\_GetErrorBuf()} to get a ptr to a
+user-directed error message describing the problem,
+including the line number on which it was found.
+
+Returns \ccode{eslENODATA} if the file appears to be empty.
+
+On any error, \ccode{*ret\_type} is \ccode{eslSQFILE\_UNKNOWN}.
+
+Throws \ccode{eslEMEM} on allocation error;
+\ccode{eslEINCONCEIVABLE} on unimaginable internal errors.
+
+
+\hypertarget{func:esl_sqio_Read()}
+{\item[int esl\_sqio\_Read(ESL\_SQFILE *sqfp, ESL\_SQ *sq)]}
+
+Reads the next sequence from open sequence file \ccode{sqfp} into 
+\ccode{sq}. Caller provides an allocated and initialized \ccode{sq}, which
+will be internally reallocated if its space is insufficient.
+
+Returns \ccode{eslOK} on success; the new sequence is stored in \ccode{sq}.
+
+Returns \ccode{eslEOF} when there is no sequence left in the
+file (including first attempt to read an empty file).
+
+Returns \ccode{eslEFORMAT} if a parse error is encountered.
+Call \ccode{esl\_sqfile\_GetErrorBuf()} to get a ptr to a
+user-directed error message describing the problem,
+including the line number on which it was found.
+
+Throws \ccode{eslEMEM} on allocation failure;
+\ccode{eslEINCONCEIVABLE} on internal error.
+
+
+\hypertarget{func:esl_sqio_ReadInfo()}
+{\item[int esl\_sqio\_ReadInfo(ESL\_SQFILE *sqfp, ESL\_SQ *sq)]}
+
+Read the next sequence from open sequence file \ccode{sqfp},
+but don't store the sequence (or secondary structure).
+Upon successful return, \ccode{s} holds all the available 
+information about the sequence -- its name, accession,
+description, and overall length \ccode{sq->L}. 
+
+This is useful for indexing sequence files, where
+individual sequences might be ginormous, and we'd rather
+avoid reading complete seqs into memory.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_sqio_ReadSequence()}
+{\item[int esl\_sqio\_ReadSequence(ESL\_SQFILE *sqfp, ESL\_SQ *sq)]}
+
+Read the next sequence from open sequence file \ccode{sqfp},
+skipping over the header data.  Upon successful return, 
+\ccode{s} holds just the sequece data.  File offsets will be
+filled in.
+
+This is useful fast reads of binary formats where the
+header information and sequences are stored in different
+files.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_sqio_ReadWindow()}
+{\item[int esl\_sqio\_ReadWindow(ESL\_SQFILE *sqfp, int C, int W, ESL\_SQ *sq)]}
+
+Read a next window of \ccode{W} residues from open file \ccode{sqfp},
+keeping \ccode{C} residues from the previous window as
+context, and keeping previous annotation in the \ccode{sq}
+as before. 
+
+If this is the first window of a new sequence record,
+\ccode{C} is ignored (there's no previous context yet), and
+the annotation fields of the \ccode{sq} (name, accession, and
+description) are initialized by reading the sequence
+record's header. This is the only time the annotation
+fields are initialized.
+
+On return, \ccode{sq->dsq[]} contains the window and its
+context; residues \ccode{1..sq->C} are the previous context,
+and residues \ccode{sq->C+1..sq->n} are the new window.  The
+start and end coordinates of the whole \ccode{dsq[1..n]}
+(including context) in the original source sequence are
+\ccode{sq->start..sq->end}. (Or, for text mode sequences,
+\ccode{sq->seq[0..sq->C-1,sq->C..sq->n-1]}, while \ccode{start} and
+\ccode{end} coords are still \ccode{1..L}.)
+
+When a sequence record is completed and no more data
+remain, \ccode{eslEOD} is returned, with an ``info'' \ccode{sq}
+structure (containing the annotation and the total
+sequence length \ccode{L}, but no sequence). (The total
+sequence length \ccode{L} is unknown in \ccode{sq} until this
+\ccode{eslEOD} return.)
+
+The caller may then do one of two things before calling
+\ccode{esl\_sq\_ReadWindow()} again; it can reset the sequence
+with \ccode{esl\_sq\_Reuse()} to continue reading the next
+sequence in the file, or it can set a negative \ccode{W} as a
+signal to read windows from the reverse complement
+(Crick) strand. Reverse complement reading only works
+for nucleic acid sequence. 
+
+If you read the reverse complement strand, you must read
+the whole thing, calling \ccode{esl\_sqio\_ReadWindow()} with
+negative \ccode{W} windows until \ccode{eslEOD} is returned again
+with an empty (info-only) \ccode{sq} structure. When that
+\ccode{EOD} is reached, the \ccode{sqfp} is repositioned at the
+start of the next sequence record; the caller should now
+\ccode{Reuse()} the \ccode{sq}, and the next \ccode{esl\_sqio\_ReadWindow()}
+call must have a positive \ccode{W}, corresponding to starting
+to read the Watson strand of the next sequence.
+
+Note that the \ccode{ReadWindow()} interface is designed for
+an idiom of sequential reading of complete sequences in
+overlapping windows, possibly on both strands; if you
+want more freedom to move around in the sequence
+grabbing windows in another order, you can use the
+\ccode{FetchSubseq()} interface.
+
+Reading the reverse complement strand requires file
+repositioning, so it will not work on non-repositionable
+streams like gzipped files or a stdin pipe. Moreover,
+for reverse complement input to be efficient, the
+sequence file should have consistent line lengths, 
+suitable for SSI's fast subsequence indexing.
+
+Returns \ccode{eslOK} on success; \ccode{sq} now contains next window of
+sequence, with at least 1 new residue. The number
+of new residues is \ccode{sq->W}; \ccode{sq->C} residues are 
+saved from the previous window. Caller may now
+process residues \ccode{sq->dsq[sq->C+1]..sq->dsq[sq->n]}.
+
+\ccode{eslEOD} if no new residues were read for this sequence
+and strand, and \ccode{sq} now contains an empty info-only
+structure (annotation and \ccode{L} are valid). Before calling
+\ccode{esl\_sqio\_ReadWindow()} again, caller will either want
+to make \ccode{W} negative (to start reading the Crick strand
+of the current sequence), or it will want to reset the
+\ccode{sq} (with \ccode{esl\_sq\_Reuse()}) to go on the next sequence.
+
+\ccode{eslEOF} if we've already returned \ccode{eslEOD} before to
+signal the end of the previous seq record, and moreover,
+there's no more sequence records in the file.
+
+\ccode{eslEINVAL} if an invalid residue is found in the
+sequence, or if you attempt to take the reverse
+complement of a sequence that can't be reverse
+complemented.
+
+Throws \ccode{eslESYNTAX} if you try to read a reverse window before
+you've read forward strand.
+
+\ccode{eslECORRUPT} if something goes awry internally in the
+coordinate system.
+
+\ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_sqio_ReadBlock()}
+{\item[int esl\_sqio\_ReadBlock(ESL\_SQFILE *sqfp, ESL\_SQ\_BLOCK *sqBlock, int max\_residues, int max\_sequences, int max\_init\_window, int long\_target)]}
+
+Reads a block of sequences from open sequence file \ccode{sqfp} into 
+\ccode{sqBlock}.
+
+Returns \ccode{eslOK} on success; the new sequence is stored in \ccode{sqBlock}.
+
+Returns \ccode{eslEOF} when there is no sequence left in the
+file (including first attempt to read an empty file).
+
+Returns \ccode{eslEFORMAT} if a parse error is encountered.
+Call \ccode{esl\_sqfile\_GetErrorBuf()} to get a ptr to a
+user-directed error message describing the problem,
+including the line number on which it was found.
+
+Throws \ccode{eslEMEM} on allocation failure;
+\ccode{eslEINCONCEIVABLE} on internal error.
+
+
+\hypertarget{func:esl_sqio_Parse()}
+{\item[int esl\_sqio\_Parse(char *buf, int size, ESL\_SQ *s, int format)]}
+
+Parse the buffer \ccode{buf} for a sequence \ccode{s} of type
+\ccode{format}.  The buffer must contain the entire sequence.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM}  on allocation error.
+\ccode{eslEFORMAT}  on parsing error.
+\ccode{eslEINVAL} on unsupported format.
+
+
+\hypertarget{func:esl_sqio_Write()}
+{\item[int esl\_sqio\_Write(FILE *fp, ESL\_SQ *s, int format, int update)]}
+
+Write sequence \ccode{s} to an open FILE \ccode{fp} in file format
+\ccode{format}.
+
+If \ccode{update} is \ccode{TRUE}, set the offsets for sequence \ccode{s}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEMEM} on allocation error.
+\ccode{eslEWRITE} on system write error, such as filled disk.
+
+
+\hypertarget{func:esl_sqio_Echo()}
+{\item[int esl\_sqio\_Echo(ESL\_SQFILE *sqfp, const ESL\_SQ *sq, FILE *ofp)]}
+
+Given a complete \ccode{sq} that we have read by some means
+from an open \ccode{sqfp}; echo that sequence's record
+onto the output stream \ccode{ofp}. 
+
+This allows records to be regurgitated exactly as they
+appear, rather than writing the subset of information
+stored in an \ccode{ESL\_SQ}. \ccode{esl-sfetch} in the miniapps uses
+this, for example.
+
+Because this relies on repositioning the \ccode{sqfp}, it
+cannot be called on non-positionable streams (stdin or
+gzipped files). Because it relies on the sequence lying
+in a contiguous sequence of bytes in the file, it cannot
+be called on a sequence in a multiple alignment file.
+Trying to do so throws an \ccode{eslEINVAL} exception.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEINVAL}   if \ccode{sqfp} isn't a repositionable sequence file.
+\ccode{eslECORRUPT} if we run out of data, probably from bad offsets
+\ccode{eslEMEM}     on allocation failure.
+\ccode{eslESYS}     on system call failures.
+
+
+
+
+\hypertarget{func:esl_sqfile_GetErrorBuf()}
+{\item[const char * esl\_sqfile\_GetErrorBuf(const ESL\_SQFILE *sqfp)]}
+
+Returns the pointer to the error buffer.
+Each parser is responsible for formatting
+a zero terminated string describing the
+error condition.
+
+Returns A pointer the error message.
+
+
+\hypertarget{func:esl_sqfile_IsRewindable()}
+{\item[int esl\_sqfile\_IsRewindable(const ESL\_SQFILE *sqfp)]}
+
+Returns \ccode{TRUE} if \ccode{sqfp} can be rewound (positioned 
+to an offset of zero), in order to read it a second
+time.
+
+
+\hypertarget{func:esl_sqio_IsAlignment()}
+{\item[int esl\_sqio\_IsAlignment(int fmt)]}
+
+Returns TRUE if \ccode{fmt} is an alignment file
+format code; else returns FALSE.
+
+This function only checks the convention
+that \ccode{fmt} codes $<$100 are unaligned formats,
+and $\geq$100 are aligned formats. It does
+not check that \ccode{fmt} is a recognized format
+code.
+
+
+\hypertarget{func:esl_sqio_EncodeFormat()}
+{\item[int esl\_sqio\_EncodeFormat(char *fmtstring)]}
+
+Given \ccode{fmtstring}, return format code.  For example, if
+\ccode{fmtstring} is "fasta", returns \ccode{eslSQFILE\_FASTA}. Returns 
+\ccode{eslSQFILE\_UNKNOWN} if \ccode{fmtstring} doesn't exactly match a 
+known format.
+
+Matching is case insensitive; fasta, FASTA, and FastA
+all return \ccode{eslSQFILE\_FASTA}, for example.
+
+
+\hypertarget{func:esl_sqio_DecodeFormat()}
+{\item[char * esl\_sqio\_DecodeFormat(int fmt)]}
+
+Given a format code \ccode{fmt}, returns a string label for
+that format. For example, if \ccode{fmt} is \ccode{eslSQFILE\_FASTA},
+returns "FASTA". 
+
+
+\hypertarget{func:esl_sqfile_Position()}
+{\item[int esl\_sqfile\_Position(ESL\_SQFILE *sqfp, off\_t offset)]}
+
+Reposition an open \ccode{sqfp} to offset \ccode{offset}.
+\ccode{offset} would usually be the first byte of a
+desired sequence record.
+
+Only normal sequence files can be positioned to a
+nonzero offset. If \ccode{sqfp} corresponds to a standard
+input stream or gzip -dc stream, it may not be
+repositioned. If \ccode{sqfp} corresponds to a multiple
+sequence alignment file, the only legal \ccode{offset}
+is 0, to rewind the file to the beginning and 
+be able to read the entire thing again.
+
+After \ccode{esl\_sqfile\_Position()} is called on a nonzero
+\ccode{offset}, and other bookkeeping information is unknown.
+If caller knows it, it should set it explicitly.
+
+See the SSI module for manipulating offsets and indices.
+
+Returns \ccode{eslOK}     on success;
+\ccode{eslEOF}    if no data can be read from this position.
+
+Throws \ccode{eslESYS} if the fseeko() or fread() call fails.
+\ccode{eslEMEM} on (re-)allocation failure.
+\ccode{eslEINVAL} if the \ccode{sqfp} is not positionable.
+\ccode{eslENOTFOUND} if in trying to rewind an alignment file  
+by closing and reopening it, the open fails.
+On errors, the state of \ccode{sqfp} is indeterminate, and
+it should not be used again.
+
+
+\hypertarget{func:esl_sqio_Ignore()}
+{\item[int esl\_sqio\_Ignore(ESL\_SQFILE *sqfp, const char *ignoredchars)]}
+
+Set the input map of the open \ccode{sqfp} to allow
+the characters in the string \ccode{ignoredchars} to appear
+in input sequences. These characters will be ignored.
+
+For example, an application might want to ignore '*'
+characters in its sequence input, because some translated
+peptide files use '*' to indicate stop codons.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_sqio_AcceptAs()}
+{\item[int esl\_sqio\_AcceptAs(ESL\_SQFILE *sqfp, char *xchars, char readas)]}
+
+Set the input map of the open \ccode{sqfp} to allow the 
+characters in the string \ccode{xchars} to appear in 
+input sequences. These characters will all be 
+mapped to the character \ccode{readas} (or, for digital
+sequence input, to the digitized representation 
+of the text character \ccode{readas} in the \ccode{sqfp}'s
+digital alphabet).
+
+For example, an application might want to read
+'*' as 'X' when reading translated peptide files
+that use '*' to indicate a stop codon.
+
+Returns \ccode{eslOK} on success.
+
+
+\hypertarget{func:esl_sqfile_OpenSSI()}
+{\item[int esl\_sqfile\_OpenSSI(ESL\_SQFILE *sqfp, const char *ssifile\_hint)]}
+
+Opens an SSI index file associated with the already open
+sequence file \ccode{sqfp}. If successful, the necessary
+information about the open SSI file is stored internally
+in \ccode{sqfp}.
+
+The SSI index file name is determined in one of two
+ways, depending on whether a non-\ccode{NULL} \ccode{ssifile\_hint}
+is provided.
+
+If \ccode{ssifile\_hint} is \ccode{NULL}, the default for
+constructing the SSI filename from the sequence
+filename, by using exactly the same path (if any) for
+the sequence filename, and appending the suffix \ccode{.ssi}.
+For example, the SSI index for \ccode{foo} is \ccode{foo.ssi}, for
+\ccode{./foo.fa} is \ccode{./foo.fa.ssi}, and for
+\ccode{/my/path/to/foo.1.fa} is \ccode{/my/path/to/foo.1.fa.ssi}.
+
+If \ccode{ssifile\_hint} is \ccode{non-NULL}, this exact fully
+qualified path is used as the SSI file name.
+
+Returns \ccode{eslOK} on success, and \ccode{sqfp->ssi} is now internally
+valid.
+
+\ccode{eslENOTFOUND} if no SSI index file is found;
+\ccode{eslEFORMAT} if it's found, but appears to be in incorrect format;
+\ccode{eslERANGE} if the SSI file uses 64-bit offsets but we're on
+a system that doesn't support 64-bit file offsets.
+
+Throws \ccode{eslEINVAL} if the open sequence file \ccode{sqfp} doesn't
+correspond to a normal sequence flatfile -- we can't
+random access in .gz compressed files, standard input,
+or multiple alignment files that we're reading
+sequentially.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_sqfile_PositionByKey()}
+{\item[int esl\_sqfile\_PositionByKey(ESL\_SQFILE *sqfp, const char *key)]}
+
+Reposition \ccode{sqfp} so that the next sequence we read will
+be the one named (or accessioned) \ccode{key}.
+
+\ccode{sqfp->linenumber} is reset to be relative to the start
+of the record named \ccode{key}, rather than the start of the
+file.
+
+Returns \ccode{eslOK} on success, and the file \ccode{sqfp} is repositioned
+so that the next \ccode{esl\_sqio\_Read()} call will read the
+sequence named \ccode{key}.
+
+Returns \ccode{eslENOTFOUND} if \ccode{key} isn't found in the
+index; in this case, the position of \ccode{sqfp} in the file
+is unchanged.
+
+Returns \ccode{eslEFORMAT} if something goes wrong trying to
+read the index, almost certainly indicating a format
+problem in the SSI file.
+
+Returns \ccode{eslEOF} if, after repositioning, we fail to
+load the next line or buffer from the sequence file;
+this probably also indicates a format problem in the SSI
+file.
+
+Throws \ccode{eslEMEM}   on allocation error;
+\ccode{eslEINVAL} if there's no open SSI index in \ccode{sqfp};
+\ccode{eslESYS}   if the \ccode{fseek()} fails.
+
+In all these cases, the state of \ccode{sqfp} becomes
+undefined, and the caller should not use it again.
+
+
+\hypertarget{func:esl_sqfile_PositionByNumber()}
+{\item[int esl\_sqfile\_PositionByNumber(ESL\_SQFILE *sqfp, int which)]}
+
+Reposition \ccode{sqfp} so that the next sequence we 
+read will be the \ccode{which}'th sequence, where \ccode{which}
+is \ccode{0..sqfp->ssi->nprimary-1}. 
+
+\ccode{sqfp->linenumber} is reset to be relative to the start
+of the record named \ccode{key}, rather than the start of the
+file.
+
+Returns \ccode{eslOK} on success, and the file \ccode{sqfp} is repositioned.
+
+Returns \ccode{eslENOTFOUND} if there is no sequence number
+\ccode{which} in the index; in this case, the position of
+\ccode{sqfp} in the file is unchanged.
+
+Returns \ccode{eslEFORMAT} if something goes wrong trying to
+read the index, almost certainly indicating a format
+problem in the SSI file.
+
+Returns \ccode{eslEOF} if, after repositioning, we fail to
+load the next line or buffer from the sequence file;
+this probably also indicates a format problem in the SSI
+file.
+
+Throws \ccode{eslEMEM}   on allocation error;
+\ccode{eslEINVAL} if there's no open SSI index in \ccode{sqfp};
+\ccode{eslESYS}   if the \ccode{fseek()} fails.
+
+In all these cases, the state of \ccode{sqfp} becomes
+undefined, and the caller should not use it again.
+
+
+\hypertarget{func:esl_sqio_Fetch()}
+{\item[int esl\_sqio\_Fetch(ESL\_SQFILE *sqfp, const char *key, ESL\_SQ *sq)]}
+
+Fetch a sequence named (or accessioned) \ccode{key} from
+the repositionable, open sequence file \ccode{sqfp}.
+The open \ccode{sqfp} must have an open SSI index.
+The sequence is returned in \ccode{sq}.
+
+Returns \ccode{eslOK} on soccess.
+\ccode{eslEINVAL} if no SSI index is present, or if \ccode{sqfp} can't
+be repositioned.
+\ccode{eslENOTFOUND} if \ccode{source} isn't found in the file.
+\ccode{eslEFORMAT} if either the index file or the sequence file
+can't be parsed, because of unexpected format issues.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_sqio_FetchInfo()}
+{\item[int esl\_sqio\_FetchInfo(ESL\_SQFILE *sqfp, const char *key, ESL\_SQ *sq)]}
+
+Fetch a sequence named (or accessioned) \ccode{key} from
+the repositionable, open sequence file \ccode{sqfp}, reading
+all info except the sequence (and secondary structure).
+The open \ccode{sqfp} must have an open SSI index.
+The sequence info is returned in \ccode{sq}.
+
+Returns \ccode{eslOK} on soccess.
+\ccode{eslEINVAL} if no SSI index is present, or if \ccode{sqfp} can't
+be repositioned.
+\ccode{eslENOTFOUND} if \ccode{source} isn't found in the file.
+\ccode{eslEFORMAT} if either the index file or the sequence file
+can't be parsed, because of unexpected format issues.
+
+Throws \ccode{eslEMEM} on allocation error.
+
+
+\hypertarget{func:esl_sqio_FetchSubseq()}
+{\item[int esl\_sqio\_FetchSubseq(ESL\_SQFILE *sqfp, const char *source, int64\_t start, int64\_t end, ESL\_SQ *sq)]}
+
+Fetch subsequence \ccode{start..end} from a sequence named (or
+accessioned) \ccode{source}, in the repositionable, open sequence file \ccode{sqfp}.
+The open \ccode{sqfp} must have an SSI index. Put the
+subsequence in \ccode{sq}. 
+
+As a special case, if \ccode{end} is 0, the subsequence is
+fetched all the way to the end, so you don't need to
+look up the sequence length \ccode{L} to fetch a suffix.
+
+The caller may want to rename/reaccession/reannotate the
+subsequence.  Upon successful return, \ccode{sq->name} is set
+to \ccode{source/start-end}, and \ccode{sq->source} is set to
+\ccode{source} The accession and description \ccode{sq->acc} and
+\ccode{sq->desc} are set to the accession and description of
+the source sequence.
+
+Returns \ccode{eslOK} on success.
+\ccode{eslEINVAL} if no SSI index is present, or if \ccode{sqfp} can't
+be repositioned.
+\ccode{eslENOTFOUND} if \ccode{source} isn't found in the file.
+\ccode{eslEFORMAT} if either the index file or the sequence file
+can't be parsed, because of unexpected format issues.
+\ccode{eslERANGE} if the \ccode{start..end} coords don't lie entirely
+within the \ccode{source} sequence.
+
+Throws \ccode{eslEMEM} on allocation errors.
+
+
+\hypertarget{func:esl_sqfile_Cache()}
+{\item[int esl\_sqfile\_Cache(const ESL\_ALPHABET *abc, const char *seqfile, int fmt, const char *env, ESL\_SQCACHE **ret\_sqcache)]}
+
+Read an entire database into memory building a cached
+structure \ccode{ESL\_SQCACHE}.  The cache structure has basic
+information about the database, ie number of sequences
+number of residues, etc.
+
+All sequences \ccode{ESL\_SQ} are in a memory array \ccode{sq\_list}.
+The number of elements in the list is \ccode{seq\_count}.  The
+header pointers, ie name, acc and desc are pointers into
+the \ccode{header\_mem} buffer.  All digitized sequences are pointers
+into the \ccode{residue\_mem} buffer.
+
+Returns \ccode{eslOK} on success.
+
+Returns \ccode{eslEFORMAT} if a parse error is encountered in
+trying to read the sequence file.
+
+Returns \ccode{eslENODATA} if the file appears to be empty.
+
+Throws \ccode{eslEMEM} on allocation error;
+
+
+\hypertarget{func:esl_sqfile_Free()}
+{\item[void esl\_sqfile\_Free(ESL\_SQCACHE *sqcache)]}
+
+Frees all the memory used to cache the sequence database.
+
+Returns none.
+
+
+\end{sreapi}
+

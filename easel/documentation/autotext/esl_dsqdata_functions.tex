@@ -1,0 +1,169 @@
+\begin{sreapi}
+\hypertarget{func:esl_dsqdata_Open()}
+{\item[int esl\_dsqdata\_Open(ESL\_ALPHABET **byp\_abc, char *basename, int nconsumers, ESL\_DSQDATA **ret\_dd)]}
+
+Open dsqdata database \ccode{basename} for reading.  The file
+\ccode{basename} is a stub describing the database. The bulk
+of the data are in three accompanying binary files: the
+index file \ccode{basename}.dsqi, the metadata file
+\ccode{basename}.dsqm, and the sequence file \ccode{basename}.dsqs.
+
+\ccode{nconsumers} is an upper bound on the number of threads
+in which the caller plans to be calling
+\ccode{esl\_dsqdata\_Read()} -- or, more precisely, the maximum
+number of data chunks that the caller could be working
+on at any given instant.  This is a hint, not a
+commitment. The dsqdata loader uses it to determine the
+maximum number of data chunks that can be in play at
+once (including chunks it is juggling internally, plus
+if all the caller's reader threads are busy on
+theirs). If \ccode{nconsumers} is set too small, the loader
+may stall waiting for chunks to come back for recycling.
+
+Reading digital sequence data requires a digital
+alphabet.  You can either provide one (in which case we
+validate that it matches the alphabet used by the
+dsqdata) or, as a convenience, \ccode{esl\_dsqdata\_Open()} can
+create one for you. Either way, you pass a pointer to an
+\ccode{ESL\_ALPHABET} structure \ccode{abc}, in \ccode{byp\_abc}.  \ccode{byp\_abc}
+uses a partial Easel "bypass" idiom: if \ccode{*byp\_abc} is
+NULL, we allocate and return a new alphabet; if
+\ccode{*byp\_abc} is a ptr to an existing alphabet, we use it
+for validation. That is, you have two choices:
+
+```
+ESL_ALPHABET *abc = NULL;
+esl_dsqdata_Open(&abc, basename...)
+// \ccode{abc} is now the alphabet of \ccode{basename}; 
+// now you're responsible for Destroy'ing it
+```
+
+or:
+
+```
+ESL_ALPHABET *abc = esl_alphabet_Create(eslAMINO);
+status = esl_dsqdata_Open(&abc, basename);
+// if status == eslEINCOMPAT, alphabet in basename 
+// doesn't match caller's expectation
+```
+
+Returns \ccode{eslOK} on success.
+
+\ccode{eslENOTFOUND} if one or more of the expected datafiles
+aren't there or can't be opened.
+
+\ccode{eslEFORMAT} if something looks wrong in parsing file
+formats.  Includes problems in headers, and also the
+case where caller provides a digital alphabet in
+\ccode{*byp\_abc} and it doesn't match the database's alphabet.
+
+On any normal error, \ccode{*ret\_dd} is still returned, but in
+an error state, and \ccode{dd->errbuf} is a user-directed
+error message that the caller can relay to the user. Other
+than the \ccode{errbuf}, the rest of the contents are undefined.
+
+Caller is responsible for destroying \ccode{*byp\_abc}.
+
+Throws \ccode{eslEMEM} on allocation error.
+\ccode{eslESYS} on system call failure.
+\ccode{eslEUNIMPLEMENTED} if data are byteswapped
+TODO: handle byteswapping
+
+On any thrown exception, \ccode{*ret\_dd} is returned NULL.
+
+On \ccode{eslESYS} exceptions, some thread resources may
+not be fully freed, leading to some memory leakage.
+
+
+\hypertarget{func:esl_dsqdata_Read()}
+{\item[int esl\_dsqdata\_Read(ESL\_DSQDATA *dd, ESL\_DSQDATA\_CHUNK **ret\_chu)]}
+
+Read the next chunk from \ccode{dd}, return a pointer to it in
+\ccode{*ret\_chu}, and return \ccode{eslOK}. When data are exhausted,
+return \ccode{eslEOF}, and \ccode{*ret\_chu} is \ccode{NULL}. 
+
+Threadsafe. All thread operations in the dsqdata reader
+are handled internally. Caller does not have to worry
+about wrapping this in a mutex. Multiple caller threads
+can call \ccode{esl\_dsqdata\_Read()}.
+
+All chunk allocation and deallocation is handled
+internally. After using a chunk, caller gives it back to
+the reader using \ccode{esl\_dsqdata\_Recycle()}.
+
+Returns \ccode{eslOK} on success. \ccode{*ret\_chu} is a chunk of seq data.
+Caller must call \ccode{esl\_dsqdata\_Recycle()} on each chunk
+that it Read()'s.
+
+\ccode{eslEOF} if we've reached the end of the input file;
+\ccode{*ret\_chu} is NULL.
+
+Throws \ccode{eslESYS} if a pthread call fails. 
+Caller should treat this as disastrous. Without correctly
+working pthread calls, we cannot read, and we may not be able
+to correctly clean up and close the reader. Caller should
+treat \ccode{dd} as toxic, clean up whatever else it may need to,
+and exit.
+
+
+\hypertarget{func:esl_dsqdata_Recycle()}
+{\item[int esl\_dsqdata\_Recycle(ESL\_DSQDATA *dd, ESL\_DSQDATA\_CHUNK *chu)]}
+
+Recycle chunk \ccode{chu} back to the reader \ccode{dd}.  The reader
+is responsible for all allocation and deallocation of
+chunks. The reader will either reuse the chunk's memory
+if more chunks remain to be read, or it will free it.
+
+Returns \ccode{eslOK} on success. 
+
+Throws \ccode{eslESYS} on a pthread call failure. Caller should regard
+such an error as disastrous; if pthread calls are
+failing, you cannot depend on the reader to be working
+at all, and you should treat \ccode{dd} as toxic. Do whatever
+desperate things you need to do and exit.
+
+
+\hypertarget{func:esl_dsqdata_Close()}
+{\item[int esl\_dsqdata\_Close(ESL\_DSQDATA *dd)]}
+
+Close a dsqdata reader.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslESYS} on a system call failure, including pthread
+calls and fclose(). Caller should regard such a failure
+as disastrous: treat \ccode{dd} as toxic and exit as soon as 
+possible without making any other system calls, if possible.
+
+
+
+\hypertarget{func:esl_dsqdata_Write()}
+{\item[int esl\_dsqdata\_Write(ESL\_SQFILE *sqfp, char *basename, char *errbuf)]}
+
+Caller has just opened \ccode{sqfp}, in digital mode.
+Create a dsqdata database \ccode{basename} from the sequence
+data in \ccode{sqfp}.
+
+\ccode{sqfp} must be protein, DNA, or RNA sequence data.  It
+must be rewindable (i.e. a file), because we have to
+read it twice. It must be newly opened (i.e. positioned
+at the start).
+
+Returns \ccode{eslOK} on success.
+
+\ccode{eslEWRITE} if an output file can't be opened. \ccode{errbuf}
+contains user-directed error message.
+
+\ccode{eslEFORMAT} if a parse error is encountered while
+reading \ccode{sqfp}.
+
+
+Throws \ccode{eslESYS}   A system call failed, such as fwrite().
+\ccode{eslEINVAL} Sequence handle \ccode{sqfp} isn't digital and rewindable.
+\ccode{eslEMEM}   Allocation failure
+\ccode{eslEUNIMPLEMENTED} Sequence is too long to be encoded.
+(TODO: chromosome-scale DNA sequences)
+
+
+\end{sreapi}
+

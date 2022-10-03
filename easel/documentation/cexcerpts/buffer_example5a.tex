@@ -1,0 +1,67 @@
+\begin{cchunk}
+#include "easel.h"
+#include "esl_buffer.h"
+
+#include <stdio.h>
+#include <ctype.h>
+
+int
+example_read_fasta(ESL_BUFFER *bf, char **ret_name, char **ret_desc, char **ret_seq, int *ret_seqlen)
+{
+  char      *seqname = NULL;
+  char      *seqdesc = NULL;
+  char      *seq     = NULL;
+  esl_pos_t  seqlen  = 0;
+  esl_pos_t  salloc  = 0;
+  char      *p;
+  void      *tmp;
+  esl_pos_t  n, i;
+  int        status;
+
+  if ((status = esl_buffer_Get(bf, &p, &n)) != eslOK) goto ERROR; /* includes normal EOF */
+  if (p[0] != '>') ESL_XFAIL(eslEINVAL, bf->errmsg, "Expected FASTA record to start with >");
+  esl_buffer_Set(bf, p, 1);
+
+  status = esl_buffer_FetchTokenAsStr(bf, " \t", &seqname, NULL);
+  if      (status == eslEOF) ESL_XFAIL(eslEINVAL, bf->errmsg, "Premature eof while trying to parse sequence name");
+  else if (status == eslEOL) ESL_XFAIL(eslEINVAL, bf->errmsg, "No sequence name found");
+
+  status = esl_buffer_FetchLineAsStr(bf, &seqdesc, NULL);
+  if (status == eslEOF) goto DONE; /* weird but ok. name, no desc, and a blank sequence. */
+
+  ESL_ALLOC(seq, sizeof(char) * 256);
+  salloc = 256;
+
+  while (esl_buffer_GetLine(bf, &p, &n) == eslOK)
+    {
+      if (p[0] == '>') { esl_buffer_Set(bf, p, 0); break; }
+
+      if (seqlen+n+1 > salloc) { 
+	ESL_RALLOC(seq, tmp, sizeof(char) * (seqlen+n+1));  
+	salloc = seqlen+n+1; 
+      }
+
+      for (i = 0; i < n; i++) {
+	if (! isspace(p[i])) { seq[seqlen++] = p[i]; }
+      }
+    }
+    
+ DONE:
+  seq[seqlen] = '\0';
+  *ret_name   = seqname;
+  *ret_desc   = seqdesc;
+  *ret_seq    = seq;
+  *ret_seqlen = seqlen;
+  return eslOK;
+
+ ERROR:
+  if (seqname) free(seqname);  
+  if (seqdesc) free(seqdesc); 
+  if (seq)     free(seq);  
+  *ret_name   = NULL;
+  *ret_desc   = NULL;
+  *ret_seq    = NULL;
+  *ret_seqlen = 0;
+  return status;
+}
+\end{cchunk}

@@ -1,0 +1,31 @@
+\begin{cchunk}
+#include <stdio.h>
+#include "easel.h"
+#include "esl_fileparser.h"
+
+int 
+main(int argc, char **argv)
+{
+  char           *filename = argv[1];
+  int             nline    = 1;
+  int             ntok;
+  ESL_FILEPARSER *efp;
+  char           *tok;
+  int             toklen;
+
+  if (esl_fileparser_Open(filename, NULL, &efp) != eslOK) esl_fatal("File open failed");
+  esl_fileparser_SetCommentChar(efp, '#');
+  
+  while (esl_fileparser_NextLine(efp) == eslOK)
+  {
+    ntok = 0;
+    while (esl_fileparser_GetTokenOnLine(efp, &tok, &toklen) == eslOK)
+      ntok++;
+    printf("Line %d in the file (%d non-blank, non-comment) contains %d tokens...\n", 
+	   efp->linenumber, nline, ntok);
+    nline++;
+  }
+  esl_fileparser_Close(efp);
+  return 0;
+}
+\end{cchunk}

@@ -1,0 +1,251 @@
+\begin{sreapi}
+\hypertarget{func:esl_gumbel_pdf()}
+{\item[double esl\_gumbel\_pdf(double x, double mu, double lambda)]}
+
+Calculates the probability density function for the Gumbel,
+$P(X=x)$, given quantile \ccode{x} and Gumbel location and
+scale parameters \ccode{mu} and \ccode{lambda}.
+
+Let $y = \lambda(x-\mu)$; for 64-bit doubles,
+useful dynamic range is about $-6.5 <= y <= 710$.
+Returns 0.0 for smaller $y$, 0.0 for larger $y$.
+
+
+\hypertarget{func:esl_gumbel_logpdf()}
+{\item[double esl\_gumbel\_logpdf(double x, double mu, double lambda)]}
+
+Calculates the log probability density function for the Gumbel,
+$\log P(X=x)$.
+
+Let $y = \lambda(x-\mu)$; for 64-bit doubles,
+useful dynamic range is about $-708 <= y <= \infty$.
+Returns $-\infty$ for smaller or larger $y$.
+
+
+\hypertarget{func:esl_gumbel_cdf()}
+{\item[double esl\_gumbel\_cdf(double x, double mu, double lambda)]}
+
+Calculates the cumulative distribution function
+for the Gumbel, $P(X \leq x)$.
+
+Let $y = \lambda(x-\mu)$; for 64-bit doubles,
+useful dynamic range for $y$ is about $-6.5 <= y <=36$.
+Returns 0.0 for smaller $y$, 1.0 for larger $y$.
+
+
+\hypertarget{func:esl_gumbel_logcdf()}
+{\item[double esl\_gumbel\_logcdf(double x, double mu, double lambda)]}
+
+Calculates the log of the cumulative distribution function
+for the Gumbel, $\log P(X \leq x)$.
+
+Let $y = \lambda(x-\mu)$; for 64-bit doubles,
+useful dynamic range for $y$ is about $-708 <= y <= 708$.
+Returns $-\infty$ for smaller $y$, 0.0 for larger $y$.
+
+
+\hypertarget{func:esl_gumbel_surv()}
+{\item[double esl\_gumbel\_surv(double x, double mu, double lambda)]}
+
+Calculates the survivor function, $P(X>x)$ for a Gumbel 
+(that is, 1-cdf), the right tail's probability mass.
+
+Let $y=\lambda(x-\mu)$; for 64-bit doubles, 
+useful dynamic range for $y$ is $-3.6 <= y <= 708$.
+Returns 1.0 for $y$ below lower limit, and 0.0
+for $y$ above upper limit.
+
+
+\hypertarget{func:esl_gumbel_logsurv()}
+{\item[double esl\_gumbel\_logsurv(double x, double mu, double lambda)]}
+
+Calculates $\log P(X>x)$ for a Gumbel (that is, $\log$(1-cdf)):
+the log of the right tail's probability mass.
+
+Let $y=\lambda(x-\mu)$; for 64-bit doubles, 
+useful dynamic range for $y$ is $-6.5 <= y <= \infty$.
+Returns 0.0 for smaller $y$.
+
+
+\hypertarget{func:esl_gumbel_invcdf()}
+{\item[double esl\_gumbel\_invcdf(double p, double mu, double lambda)]}
+
+Calculates the inverse CDF for a Gumbel distribution
+with parameters \ccode{mu} and \ccode{lambda}. That is, returns
+the quantile \ccode{x} at which the CDF is \ccode{p}.
+
+
+\hypertarget{func:esl_gumbel_invsurv()}
+{\item[double esl\_gumbel\_invsurv(double p, double mu, double lambda)]}
+
+Calculates the score at which the right tail's mass
+is p, for a Gumbel distribution
+with parameters \ccode{mu} and \ccode{lambda}. That is, returns
+the quantile \ccode{x} at which 1-CDF is \ccode{p}.
+
+
+\hypertarget{func:esl_gumbel_generic_pdf()}
+{\item[double esl\_gumbel\_generic\_pdf(double p, void *params)]}
+
+Generic-API version of PDF function.
+
+
+\hypertarget{func:esl_gumbel_generic_cdf()}
+{\item[double esl\_gumbel\_generic\_cdf(double x, void *params)]}
+
+Generic-API version of CDF function.
+
+
+\hypertarget{func:esl_gumbel_generic_surv()}
+{\item[double esl\_gumbel\_generic\_surv(double p, void *params)]}
+
+Generic-API version of survival function.
+
+
+\hypertarget{func:esl_gumbel_generic_invcdf()}
+{\item[double esl\_gumbel\_generic\_invcdf(double p, void *params)]}
+
+Generic-API version of inverse CDF.
+
+
+\hypertarget{func:esl_gumbel_Plot()}
+{\item[int esl\_gumbel\_Plot(FILE *fp, double mu, double lambda, 
+		double (*func)(double x, double mu, double lambda), 
+		double xmin, double xmax, double xstep)]}
+
+Plot a Gumbel function \ccode{func} (for instance,
+\ccode{esl\_gumbel\_pdf()}) for parameters \ccode{mu} and \ccode{lambda}, for
+a range of quantiles x from \ccode{xmin} to \ccode{xmax} in steps of \ccode{xstep};
+output to an open stream \ccode{fp} in xmgrace XY input format.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error, such as filled disk.
+
+
+\hypertarget{func:esl_gumbel_Sample()}
+{\item[double esl\_gumbel\_Sample(ESL\_RANDOMNESS *r, double mu, double lambda)]}
+
+Sample a Gumbel-distributed random variate
+by the transformation method.
+
+
+\hypertarget{func:esl_gumbel_FitComplete()}
+{\item[int esl\_gumbel\_FitComplete(double *x, int n, double *ret\_mu, double *ret\_lambda)]}
+
+Given an array of Gumbel-distributed samples
+\ccode{x[0]..x[n-1]}, find maximum likelihood parameters \ccode{mu}
+and \ccode{lambda}.
+
+The number of samples \ccode{n} must be reasonably large to get
+an accurate fit. \ccode{n=100} suffices to get an accurate
+location parameter $\mu$ (to about 1% error), but
+\ccode{n~10000} is required to get a similarly accurate
+estimate of $\lambda$. It's probably a bad idea to try to
+fit a Gumbel to less than about 1000 data points.
+
+On a very small number of samples, the fit can fail
+altogether, in which case the routine will return a
+\ccode{eslENORESULT} code. Caller must check for this.
+
+Uses approach described in [Lawless82]. Solves for lambda
+using Newton/Raphson iterations, then substitutes lambda
+into Lawless' equation 4.1.5 to get mu.
+
+Returns \ccode{eslOK} on success.
+
+\ccode{eslEINVAL} if n\ccode{=1.
+<eslENORESULT} if the fit fails, likely because the
+number of samples is too small. On either error,
+\ccode{*ret\_mu} and \ccode{*ret\_lambda} are 0.0.  These are classed
+as failures (normal errors) because the data vector may
+have been provided by a user.
+
+
+\hypertarget{func:esl_gumbel_FitCompleteLoc()}
+{\item[int esl\_gumbel\_FitCompleteLoc(double *x, int n, double lambda, double *ret\_mu)]}
+
+Given an array of Gumbel-distributed samples 
+\ccode{x[0]..x[n-1]} (complete data), and a known
+(or otherwise fixed) \ccode{lambda}, find a maximum
+likelihood estimate for location parameter \ccode{mu}.
+
+Algorithm is a straightforward simplification of
+\ccode{esl\_gumbel\_FitComplete()}.
+
+Returns \ccode{eslOK} on success.
+
+\ccode{eslEINVAL} if n\ccode{=1; on this error, <*ret\_mu} = 0.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_gumbel_FitCensored()}
+{\item[int esl\_gumbel\_FitCensored(double *x, int n, int z, double phi, double *ret\_mu, double *ret\_lambda)]}
+
+Given a left-censored array of Gumbel-distributed samples
+\ccode{x[0]..x[n-1]}, the number of censored samples \ccode{z}, and
+the censoring value \ccode{phi} (all \ccode{x[i]} $\geq$ \ccode{phi}).  Find
+maximum likelihood parameters \ccode{mu} and \ccode{lambda}.
+
+Returns \ccode{eslOK} on success.
+
+\ccode{eslEINVAL} if n\ccode{=1. 
+<eslENORESULT} if the fit fails, likey because the number
+of samples is too small.
+On either error, \ccode{*ret\_mu} and \ccode{*ret\_lambda} are 0.0.
+These are classed as failures (normal errors) because the
+data vector may have been provided by a user.
+
+
+\hypertarget{func:esl_gumbel_FitCensoredLoc()}
+{\item[int esl\_gumbel\_FitCensoredLoc(double *x, int n, int z, double phi, double lambda, 
+			  double *ret\_mu)]}
+
+Given a left-censored array of Gumbel distributed samples
+\ccode{x[0}..x[n-1]>, the number of censored samples \ccode{z}, and the censoring
+value \ccode{phi} (where all \ccode{x[i]} $\geq$ \ccode{phi}), and a known
+(or at least fixed) \ccode{lambda};
+find the maximum likelihood estimate of the location
+parameter $\mu$ and return it in \ccode{ret\_mu}.
+
+Returns \ccode{eslOK} on success.
+
+\ccode{eslEINVAL} if n\ccode{=1; on this error, <*ret\_mu} = 0.
+
+Throws (no abnormal error conditions)
+
+
+\hypertarget{func:esl_gumbel_FitTruncated()}
+{\item[int esl\_gumbel\_FitTruncated(double *x, int n, double phi, double *ret\_mu, double *ret\_lambda)]}
+
+Given a left-truncated array of Gumbel-distributed
+samples \ccode{x[0]..x[n-1]} and the truncation threshold
+\ccode{phi} (such that all \ccode{x[i]} $\geq$ \ccode{phi}).
+Find maximum likelihood parameters \ccode{mu} and \ccode{lambda}.
+
+\ccode{phi} should not be much greater than \ccode{mu}, the
+mode of the Gumbel, or the fit will become unstable
+or may even fail to converge. The problem is
+that for \ccode{phi} $>$ \ccode{mu}, the tail of the Gumbel
+becomes a scale-free exponential, and \ccode{mu} becomes
+undetermined.
+
+Returns \ccode{eslOK} on success.
+
+\ccode{eslEINVAL} if n\ccode{=1.
+<eslENORESULT} if the fit fails, likely because the
+number of samples \ccode{n} is too small, or because the
+truncation threshold is high enough that the tail
+looks like a scale-free exponential and we can't
+obtain \ccode{mu}.
+On either error, \ccode{*ret\_mu} and \ccode{*ret\_lambda} are 
+returned as 0.0.
+These are "normal" (returned) errors because 
+the data might be provided directly by a user.
+
+Throws \ccode{eslEMEM} on allocation error.           
+
+
+\end{sreapi}
+

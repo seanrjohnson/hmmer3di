@@ -1,0 +1,18 @@
+\begin{cchunk}
+  char  *name;      /* name of alignment, or NULL                                           */
+  char  *desc;      /* description of alignment, or NULL                                    */
+  char  *acc;       /* accession of alignment, or NULL                                      */
+  char  *au;        /* "author" information, or NULL                                        */
+  char  *ss_cons;   /* consensus sec structure, or NULL;  [0..alen-1], even in digital mode */
+  char  *sa_cons;   /* consensus surface access, or NULL; [0..alen-1], even in digital mode */
+  char  *pp_cons;   /* consensus posterior prob, or NULL; [0..alen-1], even in digital mode */
+  char  *rf;        /* reference coord system, or NULL;   [0..alen-1], even in digital mode */
+  char  *mm;        /* model mask, or NULL;   [0..alen-1], even in digital mode             */
+  char **sqacc;     /* accession numbers for sequences i                                    */
+  char **sqdesc;    /* description lines for sequences i                                    */
+  char **ss;        /* per-seq secondary structures, or NULL    (string, \0-term)           */
+  char **sa;        /* per-seq surface accessibilities, or NULL (string, \0-term)           */
+  char **pp;        /* posterior prob per residue, or NULL.     (string, \0-term)           */
+  float  cutoff[eslMSA_NCUTS];  /* NC/TC/GA cutoffs propagated to Pfam/Rfam                 */
+  int    cutset[eslMSA_NCUTS];  /* TRUE if a cutoff is set; else FALSE                      */
+\end{cchunk}

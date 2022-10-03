@@ -1,0 +1,22 @@
+\begin{cchunk}
+#define BGROUP "-b,--no-b"
+static ESL_OPTIONS options[] = {
+  /* name    type        default env_var  range toggles req  incompat help                  docgroup */
+ { "-a",     eslARG_NONE, FALSE,"FOOTEST",NULL,  NULL,  NULL,  NULL,  "toggle a on",               1 },
+ { "-b",     eslARG_NONE, FALSE,  NULL,   NULL, BGROUP, NULL,  NULL,  "toggle b on",               1 },
+ { "--no-b", eslARG_NONE,"TRUE",  NULL,   NULL, BGROUP, NULL,  NULL,  "toggle b off",              1 },
+ { "-c",     eslARG_CHAR,   "x",  NULL,"a<=c<=z",NULL,  NULL,  NULL,  "character arg",             2 },
+ { "--d1",   eslARG_NONE,"TRUE",  NULL,   NULL, "--d2", NULL,  NULL,  "toggle d1 on, d2 off",      2 },
+ { "--d2",   eslARG_NONE, FALSE,  NULL,   NULL, "--d1", NULL,  NULL,  "toggle d2 on, d1 off",      2 },
+ { "-n",     eslARG_INT,    "0",  NULL,"0<=n<10",NULL,  NULL,  NULL,  "integer arg",               2 },
+ { "-x",     eslARG_REAL, "0.8",  NULL, "0<x<1", NULL,  NULL,  NULL,  "real-value arg",            2 },
+ { "--lowx", eslARG_REAL, "1.0",  NULL,   "x>0", NULL,  NULL,  NULL,  "real arg with lower bound", 2 },
+ { "--hix",  eslARG_REAL, "0.9",  NULL,   "x<1", NULL,  NULL,  NULL,  "real arg with upper bound", 2 },
+ { "--lown", eslARG_INT,   "42",  NULL,   "n>0", NULL,"-a,-b", NULL,  "int arg with lower bound",  2 },
+ { "--hin",  eslARG_INT,   "-1",  NULL,   "n<0", NULL,  NULL,"--no-b","int arg with upper bound",  2 },
+ { "--host", eslARG_STRING, "","HOSTTEST",NULL,  NULL,  NULL,  NULL,  "string arg with env var",   3 },
+ { "--multi",eslARG_STRING,NULL,  NULL,   NULL,  NULL,  NULL,  NULL,  "test quoted configfile arg",3 },
+ { "--mul",  eslARG_NONE, FALSE,  NULL,   NULL,  NULL,  NULL,  NULL,  "test long opt abbreviation",3 }, /* xref bug #e4 */
+ {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+};
+\end{cchunk}

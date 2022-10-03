@@ -1,0 +1,36 @@
+\begin{cchunk}
+/* Example of using esl_sqio_Parse() to parse a buffer
+ *  cc -g -Wall -I. -L. -o esl_sqio_example3 -DeslSQIO_EXAMPLE3 esl_sqio.c -leasel -lm
+ *  ./esl_sqio_example3
+ */
+#include "easel.h"
+#include "esl_alphabet.h"
+#include "esl_sq.h"
+#include "esl_sqio.h"
+
+int
+main(void)
+{
+  ESL_ALPHABET *abc       = NULL;
+  ESL_SQ       *sq        = NULL;
+  int           format    = eslSQFILE_FASTA;
+  int           alphatype = eslAMINO;
+  int           status;
+
+  char *test = ">12345 TEST Test fasta buffer\n"
+               "ARVAPVALPSACAPAGTQCLISGWGNTLSNGVNNPDLLQCVDAPVLSQADCEAAYPGEIT\n"
+               "SSMICVGFLEGGKDSCQGDSGGPVVCNGQLQGIVSWGYGCALPDNPGVYTKVCNFVGWIQ\n"
+               "DTIAAN";
+
+  abc = esl_alphabet_Create(alphatype);
+  sq  = esl_sq_CreateDigital(abc);
+
+  status = esl_sqio_Parse(test, strlen(test), sq, format);
+  if      (status == eslEFORMAT) esl_fatal("Parse failed, invalid format");
+  else if (status != eslOK)      esl_fatal("Unexpected error %d", status);
+
+  esl_sq_Destroy(sq);
+  esl_alphabet_Destroy(abc);
+  return 0;
+}
+\end{cchunk}

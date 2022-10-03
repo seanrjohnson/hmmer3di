@@ -1,0 +1,64 @@
+\begin{sreapi}
+\hypertarget{func:esl_cluster_SingleLinkage()}
+{\item[int esl\_cluster\_SingleLinkage(void *base, size\_t n, size\_t size, 
+			  int (*linkfunc)(const void *, const void *, const void *, int *), void *param,
+			  int *workspace, int *assignments, int *ret\_C)]}
+
+Given a set of vertices, cluster them by single-linkage
+clustering.
+
+The data describing each vertex is provided in an array
+starting at \ccode{base}, consisting of \ccode{n} vertices. Each
+vertex can be of any type (structure, scalar, pointer)
+so long as each vertex element is of fixed size \ccode{n}
+bytes.
+
+A pointer to the clustering function is provided in
+\ccode{(*linkfunc)()}, and a pointer to any necessary
+parameters for that function (for example, any
+thresholds) is provided in \ccode{param}. 
+
+The \ccode{int (*linkfunc)()} must be written by the
+caller. It takes arguments \ccode{(void *v1, void *v2, void
+*param, int *ret\_link)}: pointers to two vertices to
+test for linkage and a pointer to any necessary
+parameters, and it passes the answer \ccode{TRUE} (1) or
+\ccode{FALSE} (0) back in \ccode{*ret\_link}. The \ccode{(*linkfunc)()}
+returns \ccode{eslOK} (0) on success, and a nonzero error code
+on failure (see \ccode{easel.h} for a list of Easel's error
+codes).
+
+The caller provides an allocated \ccode{workspace} with space
+for at least \ccode{2n} integers. (Allocation in the caller
+allows the caller to reuse memory and save
+allocation/free cycles, if it has many rounds of
+clustering to do.)
+
+The caller also provides allocated space in
+\ccode{assignments} for \ccode{n} integers which, upon successful
+return, contains assignments of the \ccode{0..n-1} vertices to
+\ccode{0..C-1} clusters. That is, if \ccode{assignments[42] = 1},
+that means vertex 42 is assigned to cluster 1.  The
+total number of clusters is returned in \ccode{ret\_C}.
+
+The algorithm runs in $O(N)$ memory; importantly, it
+does not require a $O(N^2)$ adjacency matrix. Worst case
+time complexity is $O(N^2)$ (multiplied by any
+additional complexity in the \ccode{(*linkfunc()} itself), but
+the worst case (no links at all; \ccode{C=n} clusters) should
+be unusual. More typically, time scales as about $N \log
+N$. Best case is $N$, for a completely connected graph
+in which all vertices group into one cluster. (More
+precisely, best case complexity arises when vertex 0 is
+connected to all other \ccode{n-1} vertices.)
+
+Returns \ccode{eslOK} on success; \ccode{assignments[0..n-1]} contains cluster assigments 
+\ccode{0..C-1} for each vertex, and \ccode{*ret\_C} contains the number of clusters
+\ccode{C}
+
+Throws status codes from the caller's \ccode{(*linkfunc)} on failure; in this case, 
+the contents of \ccode{*assignments} is undefined, and \ccode{*ret\_C} is 0.
+
+
+\end{sreapi}
+

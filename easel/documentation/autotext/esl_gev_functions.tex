@@ -1,0 +1,148 @@
+\begin{sreapi}
+\hypertarget{func:esl_gev_pdf()}
+{\item[double esl\_gev\_pdf(double x, double mu, double lambda, double alpha)]}
+
+Calculates the probability density function for the 
+generalized extreme value distribution, $P(X=x)$, given
+quantile \ccode{x} and GEV location, scale, shape parameters 
+\ccode{mu}, \ccode{lambda}, \ccode{alpha}.
+
+
+\hypertarget{func:esl_gev_logpdf()}
+{\item[double esl\_gev\_logpdf(double x, double mu, double lambda, double alpha)]}
+
+Calculates the log probability density function for the
+generalized extreme value distribution, $\log P(X=x)$, 
+given quantile \ccode{x} and GEV location, scale, shape
+parameters \ccode{mu}, \ccode{lambda}, \ccode{alpha}.
+
+
+\hypertarget{func:esl_gev_cdf()}
+{\item[double esl\_gev\_cdf(double x, double mu, double lambda, double alpha)]}
+
+Calculates the cumulative distribution function for the
+generalized extreme value distribution, $P(X \leq x)$, 
+given quantile \ccode{x} and GEV location, scale, shape
+parameters \ccode{mu}, \ccode{lambda}, \ccode{alpha}.
+
+
+\hypertarget{func:esl_gev_logcdf()}
+{\item[double esl\_gev\_logcdf(double x, double mu, double lambda, double alpha)]}
+
+Calculates the log of the cumulative distribution function for a
+generalized extreme value distribution, $\log P(X \leq x)$, 
+given quantile \ccode{x} and GEV location, scale, shape
+parameters \ccode{mu}, \ccode{lambda}, \ccode{alpha}.
+
+
+\hypertarget{func:esl_gev_surv()}
+{\item[double esl\_gev\_surv(double x, double mu, double lambda, double alpha)]}
+
+Calculates the survivor function, $P(X>x)$ (that is, 1-cdf),
+the right tail's probability mass,  given quantile \ccode{x} and
+GEV location, scale, shape parameters \ccode{mu}, \ccode{lambda}, \ccode{alpha}.
+
+
+\hypertarget{func:esl_gev_logsurv()}
+{\item[double esl\_gev\_logsurv(double x, double mu, double lambda, double alpha)]}
+
+Calculates the log survivor function $\log P(X>x)$ for a 
+generalized extreme value distribution (that is, 
+$\log (1 - \mbox{cdf})$, the log of the right tail's probability
+mass), given quantile \ccode{x} and GEV location, scale, shape
+parameters \ccode{mu}, \ccode{lambda}, \ccode{alpha}.
+
+
+\hypertarget{func:esl_gev_invcdf()}
+{\item[double esl\_gev\_invcdf(double p, double mu, double lambda, double alpha)]}
+
+Calculates the inverse CDF of the GEV: given a probability
+\ccode{p} ($0 < p < 1$), returns the quantile \ccode{x} which would
+give \ccode{p} as its CDF, for a generalized extreme value 
+distribution with parameters \ccode{mu}, \ccode{lambda}, and \ccode{alpha}.
+
+
+\hypertarget{func:esl_gev_generic_pdf()}
+{\item[double esl\_gev\_generic\_pdf(double x, void *params)]}
+
+Generic-API version of PDF.
+
+
+\hypertarget{func:esl_gev_generic_cdf()}
+{\item[double esl\_gev\_generic\_cdf(double x, void *params)]}
+
+Generic-API version of CDF.
+
+
+\hypertarget{func:esl_gev_generic_surv()}
+{\item[double esl\_gev\_generic\_surv(double x, void *params)]}
+
+Generic-API version of survival function.
+
+
+\hypertarget{func:esl_gev_generic_invcdf()}
+{\item[double esl\_gev\_generic\_invcdf(double p, void *params)]}
+
+Generic-API version of inverse CDF.
+
+
+\hypertarget{func:esl_gev_Plot()}
+{\item[int esl\_gev\_Plot(FILE *fp, double mu, double lambda, double alpha,
+	     double (*func)(double x, double mu, double lambda, double alpha), 
+	     double xmin, double xmax, double xstep)]}
+
+Plot some GEV function \ccode{func} (for instance,
+\ccode{esl\_gev\_pdf()}) for parameters \ccode{mu} and \ccode{lambda}, for
+a range of quantiles x from \ccode{xmin} to \ccode{xmax} in steps of \ccode{xstep};
+output to an open stream \ccode{fp} in xmgrace XY input format.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslEWRITE} on any system write error, such as filled disk.
+
+
+\hypertarget{func:esl_gev_Sample()}
+{\item[double esl\_gev\_Sample(ESL\_RANDOMNESS *r, double mu, double lambda, double alpha)]}
+
+Sample a GEV-distributed random variate,
+by the transformation method.
+
+
+\hypertarget{func:esl_gev_FitComplete()}
+{\item[int esl\_gev\_FitComplete(double *x, int n, 
+		    double *ret\_mu, double *ret\_lambda, double *ret\_alpha)]}
+
+Given an array of \ccode{n} GEV-distributed samples \ccode{x[0]..x[n-1},
+return maximum likelihood parameters \ccode{ret\_mu}, 
+\ccode{ret\_lambda}, and \ccode{ret\_alpha}.
+
+Uses a conjugate gradient descent algorithm that
+can be computationally intensive. A typical problem
+involving 10,000-100,000 points may take a second 
+to solve.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslENOHALT} if the fit doesn't converge.
+
+
+
+\hypertarget{func:esl_gev_FitCensored()}
+{\item[int esl\_gev\_FitCensored(double *x, int n, int z, double phi,
+		    double *ret\_mu, double *ret\_lambda, double *ret\_alpha)]}
+
+Given a left-censored array of \ccode{n} GEV-distributed samples
+\ccode{x[0]..x[n-1}, the number of censored samples \ccode{z}, and
+the censoring value \ccode{phi} (where all $x_i > \phi$ and
+all $z$ censored samples are $\leq \phi$);
+return maximum likelihood parameters \ccode{ret\_mu}, 
+\ccode{ret\_lambda}, and \ccode{ret\_alpha}.
+
+Returns \ccode{eslOK} on success.
+
+Throws \ccode{eslENOHALT} if the fit doesn't converge.
+
+
+
+\end{sreapi}
+

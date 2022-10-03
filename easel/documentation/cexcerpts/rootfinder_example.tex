@@ -1,0 +1,34 @@
+\begin{cchunk}
+#include "easel.h"
+#include "esl_rootfinder.h"
+
+struct polyparams { double a,b,c; };
+
+int quadratic_f(double x, void *params, double *ret_fx)
+{
+  struct polyparams *p = (struct polyparams *) params;
+  *ret_fx = (p->a * x * x + p->b * x + p->c);
+  return eslOK;
+}
+
+int main(void)
+{
+  ESL_ROOTFINDER *R = NULL;
+  struct polyparams p;
+  double x, fx;
+
+  p.a = 5.;
+  p.b = 2.;
+  p.c = -1.;
+
+  R = esl_rootfinder_Create(quadratic_f, &p);
+  esl_root_Bisection(R, 0., 100., &x);
+
+  quadratic_f(x, &p, &fx);
+  printf("Find an x such that f(x) = %.0fx^2 + %.0fx + %.0f = 0 ...\n", p.a, p.b, p.c);
+  printf("x = %f (f(x) = %f)\n", x, fx);
+
+  esl_rootfinder_Destroy(R);
+  return 0;
+}
+\end{cchunk}

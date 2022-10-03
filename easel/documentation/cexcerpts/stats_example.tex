@@ -1,0 +1,45 @@
+\begin{cchunk}
+/* gcc -g -Wall -o example -I. -DeslSTATS_EXAMPLE esl_stats.c esl_random.c easel.c -lm  */
+#include <stdio.h>
+#include "easel.h"
+#include "esl_random.h"
+#include "esl_stats.h"
+
+int main(void)
+{
+  ESL_RANDOMNESS *r   = esl_randomness_Create(0);
+  double a            = -3.;
+  double b            = 1.;
+  double xori         = -20.;
+  double xstep        = 1.0;
+  double setsigma     = 1.0;		/* sigma on all points */
+  int    n            = 100;
+  double *x           = malloc(sizeof(double) * n);
+  double *y           = malloc(sizeof(double) * n);
+  double *sigma       = malloc(sizeof(double) * n);
+  int    i;
+  double  ae, be, siga, sigb, cov_ab, cc, Q;
+  
+  /* Simulate some linear data, with Gaussian noise added to y_i */
+  for (i = 0; i < n; i++) {
+    sigma[i] = setsigma;
+    x[i]     = xori + i*xstep;
+    y[i]     = esl_rnd_Gaussian(r, a + b*x[i], sigma[i]);
+  }
+  
+  if (esl_stats_LinearRegression(x, y, sigma, n, &ae, &be, &siga, &sigb, &cov_ab, &cc, &Q) != eslOK)
+    esl_fatal("linear regression failed");
+
+  printf("estimated intercept a = %8.4f   [true = %8.4f]\n", ae, a);
+  printf("estimated slope b     = %8.4f   [true = %8.4f]\n", be, b);
+  printf("estimated sigma on a  = %8.4f\n",                  siga);
+  printf("estimated sigma on b  = %8.4f\n",                  sigb);
+  printf("estimated cov(a,b)    = %8.4f\n",                  cov_ab);
+  printf("correlation coeff     = %8.4f\n",                  cc);
+  printf("P-value               = %8.4f\n",                  Q);
+
+  free(x);  free(y);  free(sigma); 
+  esl_randomness_Destroy(r);
+  exit(0);
+}
+\end{cchunk}

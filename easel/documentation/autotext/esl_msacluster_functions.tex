@@ -1,0 +1,51 @@
+\begin{sreapi}
+\hypertarget{func:esl_msacluster_SingleLinkage()}
+{\item[int esl\_msacluster\_SingleLinkage(const ESL\_MSA *msa, double maxid, 
+			     int **opt\_c, int **opt\_nin, int *opt\_nc)]}
+
+Perform single link clustering of the sequences in 
+multiple alignment \ccode{msa}. Any pair of sequences with
+percent identity $\geq$ \ccode{maxid} are linked (using
+the definition from the \eslmod{distance} module).
+
+The resulting clustering is optionally returned in one
+or more of \ccode{opt\_c}, \ccode{opt\_nin}, and \ccode{opt\_nc}.  The
+\ccode{opt\_c[0..nseq-1]} array assigns a cluster index
+\ccode{(0..nc-1)} to each sequence. For example, \ccode{c[4] = 1}
+means that sequence 4 is assigned to cluster 1.  The
+\ccode{opt\_nin[0..nc-1]} array is the number of sequences
+in each cluster. \ccode{opt\_nc} is the number of clusters.
+
+Importantly, this algorithm runs in $O(N)$ memory, and
+produces one discrete clustering. Compare to
+\ccode{esl\_tree\_SingleLinkage()}, which requires an $O(N^2)$ 
+adjacency matrix, and produces a hierarchical clustering
+tree.
+
+The algorithm is worst case $O(LN^2)$ time, for $N$
+sequences of length $L$. However, the worst case is no
+links at all, and this is unusual. More typically, time
+scales as about $LN \log N$. The best case scales as
+$LN$, when there is just one cluster in a completely
+connected graph.
+
+Returns \ccode{eslOK} on success; the \ccode{opt\_c[0..nseq-1]} array contains
+cluster indices \ccode{0..nc-1} assigned to each sequence; the
+\ccode{opt\_nin[0..nc-1]} array contains the number of seqs in
+each cluster; and \ccode{opt\_nc} contains the number of
+clusters. The \ccode{opt\_c} array and \ccode{opt\_nin} arrays will be
+allocated here, if non-\ccode{NULL}, and must be free'd by the
+caller. The input \ccode{msa} is unmodified.
+
+The caller may pass \ccode{NULL} for either \ccode{opt\_c} or
+\ccode{opt\_nc} if it is only interested in one of the two
+results.
+
+Throws \ccode{eslEMEM} on allocation failure, and \ccode{eslEINVAL} if a pairwise
+comparison is invalid (which means the MSA is corrupted, so it
+shouldn't happen). In either case, \ccode{opt\_c} and \ccode{opt\_nin} are set to \ccode{NULL}
+and \ccode{opt\_nc} is set to 0, and the \ccode{msa} is unmodified.
+
+
+\end{sreapi}
+

@@ -42,3 +42,5 @@ miniapps/esl-shuffle
 miniapps/esl-ssdraw
 miniapps/esl-translate
 miniapps/esl-weight
+documentation/main.*
+documentation/latex.log

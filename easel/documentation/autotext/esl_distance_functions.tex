@@ -1,0 +1,399 @@
+\begin{sreapi}
+\hypertarget{func:esl_dst_CPairId()}
+{\item[int esl\_dst\_CPairId(const char *asq1, const char *asq2, 
+		double *opt\_pid, int *opt\_nid, int *opt\_n)]}
+
+Calculates pairwise fractional identity between two
+aligned character strings \ccode{asq1} and \ccode{asq2}. 
+Return this distance in \ccode{opt\_pid}; return the
+number of identities counted in \ccode{opt\_nid}; and
+return the denominator \ccode{MIN(len1,len2)} in
+\ccode{opt\_n}.
+
+Alphabetic symbols \ccode{[a-zA-Z]} are compared
+case-insensitively for identity. Any nonalphabetic
+character is assumed to be a gap symbol.
+
+This simple comparison rule is unaware of synonyms and
+degeneracies in biological alphabets.  For a more
+sophisticated and biosequence-aware comparison, use
+digitized sequences and the \ccode{esl\_dst\_XPairId()} function
+instead. Note that currently \ccode{esl\_dst\_XPairId()} does
+not correctly handle degeneracies, but is set up to.
+
+Returns \ccode{eslOK} on success. \ccode{opt\_pid}, \ccode{opt\_nid}, \ccode{opt\_n}
+contain the answers (for whichever were passed non-NULL). 
+
+Throws \ccode{eslEINVAL} if the strings are different lengths
+(not aligned).
+
+
+\hypertarget{func:esl_dst_CPairMatch()}
+{\item[int esl\_dst\_CPairMatch(const char *asq1, const char *asq2, 
+		   double *opt\_pmatch, int *opt\_nmatch, int *opt\_n)]}
+
+Calculates pairwise fractional matches between two
+aligned character strings \ccode{asq1} and \ccode{asq2}. 
+Return this distance in \ccode{opt\_pmatch}; return the
+number of matches counted in \ccode{opt\_nmatch}; and
+return the denominator \ccode{alen - double\_gaps} in
+\ccode{opt\_n}.
+
+Alphabetic symbols \ccode{[a-zA-Z]} are compared
+case-insensitively for identity. Any nonalphabetic
+character is assumed to be a gap symbol.
+
+This simple comparison rule is unaware of synonyms and
+degeneracies in biological alphabets.  For a more
+sophisticated and biosequence-aware comparison, use
+digitized sequences and the \ccode{esl\_dst\_XPairmatch()} function
+instead. Note that currently \ccode{esl\_dst\_XPairMatch()} does
+not correctly handle degeneracies, but is set up to.
+
+Returns \ccode{eslOK} on success. \ccode{opt\_pmatch}, \ccode{opt\_nmatch}, \ccode{opt\_n}
+contain the answers (for whichever were passed non-NULL). 
+
+Throws \ccode{eslEINVAL} if the strings are different lengths
+(not aligned).
+
+
+\hypertarget{func:esl_dst_CJukesCantor()}
+{\item[int esl\_dst\_CJukesCantor(int K, const char *as1, const char *as2, 
+		     double *opt\_distance, double *opt\_variance)]}
+
+Calculate the generalized Jukes-Cantor distance between
+two aligned character strings \ccode{as1} and \ccode{as2}, in
+substitutions/site, for an alphabet of \ccode{K} residues
+(\ccode{K=4} for nucleic acid, \ccode{K=20} for proteins). The
+maximum likelihood estimate for the distance is
+optionally returned in \ccode{opt\_distance}. The large-sample
+variance for the distance estimate is
+optionally returned in \ccode{opt\_variance}.
+
+Alphabetic symbols \ccode{[a-zA-Z]} are compared
+case-insensitively to count the number of identities
+(\ccode{n1}) and mismatches (\ccode{n2}>). Any nonalphabetic
+character is assumed to be a gap symbol, and aligned
+columns containing gap symbols are ignored.  The
+fractional difference \ccode{D} used to calculate the
+Jukes/Cantor distance is \ccode{n2/n1+n2}.
+
+Returns \ccode{eslOK} on success.
+
+Infinite distances are possible, in which case distance
+and variance are both \ccode{HUGE\_VAL}. Caller has to deal
+with this case as it sees fit, perhaps by enforcing
+an arbitrary maximum distance.
+
+Throws \ccode{eslEINVAL} if the two strings aren't the same length (and
+thus can't have been properly aligned).
+\ccode{eslEDIVZERO} if no aligned residues were counted.
+On either failure, distance and variance are both returned
+as \ccode{HUGE\_VAL}.
+
+
+\hypertarget{func:esl_dst_XPairId()}
+{\item[int esl\_dst\_XPairId(const ESL\_ALPHABET *abc, const ESL\_DSQ *ax1, const ESL\_DSQ *ax2, 
+		double *opt\_distance, int *opt\_nid, int *opt\_n)]}
+
+Digital version of \ccode{esl\_dst\_CPairId()}: \ccode{adsq1} and
+\ccode{adsq2} are digitized aligned sequences, in alphabet
+\ccode{abc}. Otherwise, same as \ccode{esl\_dst\_CPairId()} except
+that only canonical residues are counted and checked for
+identity, while \ccode{esl\_dst\_CPairId()} (which has no
+alphabet) counts and checks identity of all alphanumeric
+characters.
+
+This function does not use \ccode{esl\_abc\_Match()} to handle
+degeneracies but it is set up to do so. Doing that would
+require that \ccode{opt\_nid} be changed to a float or double,
+or its meaning be changed to be the number of canonical
+identities.
+
+Returns \ccode{eslOK} on success. \ccode{opt\_distance}, \ccode{opt\_nid}, \ccode{opt\_n}
+contain the answers, for any of these that were passed
+non-\ccode{NULL} pointers.
+
+Throws \ccode{eslEINVAL} if the strings are different lengths (not aligned).
+
+
+\hypertarget{func:esl_dst_XPairMatch()}
+{\item[int esl\_dst\_XPairMatch(const ESL\_ALPHABET *abc, const ESL\_DSQ *ax1, const ESL\_DSQ *ax2, 
+		   double *opt\_distance, int *opt\_nmatch, int *opt\_n)]}
+
+Digital version of \ccode{esl\_dst\_CPairMatch()}: \ccode{adsq1} and
+\ccode{adsq2} are digitized aligned sequences, in alphabet
+\ccode{abc}. Otherwise, same as \ccode{esl\_dst\_CPairId()} except
+that only canonical residues are counted and checked for
+identity, while \ccode{esl\_dst\_CPairId()} (which has no
+alphabet) counts and checks identity of all alphanumeric
+characters.
+
+Returns \ccode{eslOK} on success. \ccode{opt\_distance}, \ccode{opt\_nmatch}, \ccode{opt\_n}
+contain the answers, for any of these that were passed
+non-\ccode{NULL} pointers.
+
+Throws \ccode{eslEINVAL} if the strings are different lengths (not aligned).
+
+
+\hypertarget{func:esl_dst_XJukesCantor()}
+{\item[int esl\_dst\_XJukesCantor(const ESL\_ALPHABET *abc, const ESL\_DSQ *ax, const ESL\_DSQ *ay, 
+		     double *opt\_distance, double *opt\_variance)]}
+
+Calculate the generalized Jukes-Cantor distance between two
+aligned digital strings \ccode{ax} and \ccode{ay}, in substitutions/site, 
+using alphabet \ccode{abc} to evaluate identities and differences.
+The maximum likelihood estimate for the distance is optionally returned in
+\ccode{opt\_distance}. The large-sample variance for the distance
+estimate is optionally returned in \ccode{opt\_variance}.
+
+Identical to \ccode{esl\_dst\_CJukesCantor()}, except that it takes
+digital sequences instead of character strings.
+
+Returns \ccode{eslOK} on success. As in \ccode{esl\_dst\_CJukesCantor()}, the
+distance and variance may be infinite, in which case they
+are returned as \ccode{HUGE\_VAL}.
+
+Throws \ccode{eslEINVAL} if the two strings aren't the same length (and
+thus can't have been properly aligned).
+\ccode{eslEDIVZERO} if no aligned residues were counted.
+On either failure, the distance and variance are set
+to \ccode{HUGE\_VAL}.
+
+
+\hypertarget{func:esl_dst_CPairIdMx()}
+{\item[int esl\_dst\_CPairIdMx(char **as, int N, ESL\_DMATRIX **ret\_S)]}
+
+Given a multiple sequence alignment \ccode{as}, consisting
+of \ccode{N} aligned character strings; calculate
+a symmetric fractional pairwise identity matrix by $N(N-1)/2$
+calls to \ccode{esl\_dst\_CPairId()}, and return it in 
+\ccode{ret\_D}.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_S} contains the fractional
+identity matrix. Caller free's \ccode{S} with
+\ccode{esl\_dmatrix\_Destroy()}.
+
+Throws \ccode{eslEINVAL} if a seq has a different
+length than others. On failure, \ccode{ret\_D} is returned \ccode{NULL}
+and state of inputs is unchanged.
+
+\ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_dst_CDiffMx()}
+{\item[int esl\_dst\_CDiffMx(char **as, int N, ESL\_DMATRIX **ret\_D)]}
+
+Same as \ccode{esl\_dst\_CPairIdMx()}, but calculates
+the fractional difference \ccode{d=1-s} instead of the
+fractional identity \ccode{s} for each pair.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_D} contains the
+fractional difference matrix. Caller free's \ccode{D} with 
+\ccode{esl\_dmatrix\_Destroy()}.
+
+Throws \ccode{eslEINVAL} if any seq has a different
+length than others. On failure, \ccode{ret\_D} is returned \ccode{NULL}
+and state of inputs is unchanged.
+
+
+\hypertarget{func:esl_dst_CJukesCantorMx()}
+{\item[int esl\_dst\_CJukesCantorMx(int K, char **aseq, int nseq, 
+		       ESL\_DMATRIX **opt\_D, ESL\_DMATRIX **opt\_V)]}
+
+Given a multiple sequence alignment \ccode{aseq}, consisting of
+\ccode{nseq} aligned character sequences in an alphabet of
+\ccode{K} letters (usually 4 for DNA, 20 for protein);
+calculate a symmetric Jukes/Cantor pairwise distance
+matrix for all sequence pairs, and optionally return the distance
+matrix in \ccode{ret\_D}, and optionally return a symmetric matrix of the
+large-sample variances for those ML distance estimates
+in \ccode{ret\_V}.
+
+Infinite distances (and variances) are possible; they
+are represented as \ccode{HUGE\_VAL} in \ccode{D} and \ccode{V}. Caller must
+be prepared to deal with them as appropriate.
+
+Returns \ccode{eslOK} on success. \ccode{D} and \ccode{V} contain the
+distance matrix (and variances); caller frees these with
+\ccode{esl\_dmatrix\_Destroy()}. 
+
+Throws \ccode{eslEINVAL} if any pair of sequences have differing lengths
+(and thus cannot have been properly aligned). 
+\ccode{eslEDIVZERO} if some pair of sequences had no aligned
+residues. On failure, \ccode{D} and \ccode{V} are both returned \ccode{NULL}
+and state of inputs is unchanged.
+
+\ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_dst_XPairIdMx()}
+{\item[int esl\_dst\_XPairIdMx(const ESL\_ALPHABET *abc,  ESL\_DSQ **ax, int N, ESL\_DMATRIX **ret\_S)]}
+
+Given a digitized multiple sequence alignment \ccode{ax}, consisting
+of \ccode{N} aligned digital sequences in alphabet \ccode{abc}; calculate
+a symmetric pairwise fractional identity matrix by $N(N-1)/2$
+calls to \ccode{esl\_dst\_XPairId()}, and return it in \ccode{ret\_S}.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_S} contains the distance
+matrix. Caller is obligated to free \ccode{S} with 
+\ccode{esl\_dmatrix\_Destroy()}. 
+
+Throws \ccode{eslEINVAL} if a seq has a different
+length than others. On failure, \ccode{ret\_S} is returned \ccode{NULL}
+and state of inputs is unchanged.
+
+\ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_dst_XDiffMx()}
+{\item[int esl\_dst\_XDiffMx(const ESL\_ALPHABET *abc, ESL\_DSQ **ax, int N, ESL\_DMATRIX **ret\_D)]}
+
+Same as \ccode{esl\_dst\_XPairIdMx()}, but calculates fractional
+difference \ccode{1-s} instead of fractional identity \ccode{s} for
+each pair.
+
+Returns \ccode{eslOK} on success, and \ccode{ret\_D} contains the difference
+matrix; caller is obligated to free \ccode{D} with 
+\ccode{esl\_dmatrix\_Destroy()}. 
+
+Throws \ccode{eslEINVAL} if a seq has a different
+length than others. On failure, \ccode{ret\_D} is returned \ccode{NULL}
+and state of inputs is unchanged.
+
+
+\hypertarget{func:esl_dst_XJukesCantorMx()}
+{\item[int esl\_dst\_XJukesCantorMx(const ESL\_ALPHABET *abc, ESL\_DSQ **ax, int nseq, 
+		       ESL\_DMATRIX **opt\_D, ESL\_DMATRIX **opt\_V)]}
+
+Given a digitized multiple sequence alignment \ccode{ax},
+consisting of \ccode{nseq} aligned digital sequences in
+bioalphabet \ccode{abc}, calculate a symmetric Jukes/Cantor
+pairwise distance matrix for all sequence pairs;
+optionally return the distance matrix in \ccode{ret\_D} and 
+a matrix of the large-sample variances for those ML distance
+estimates in \ccode{ret\_V}.
+
+Infinite distances (and variances) are possible. They
+are represented as \ccode{HUGE\_VAL} in \ccode{D} and \ccode{V}. Caller must
+be prepared to deal with them as appropriate.
+
+Returns \ccode{eslOK} on success. \ccode{D} (and optionally \ccode{V}) contain the
+distance matrix (and variances). Caller frees these with
+\ccode{esl\_dmatrix\_Destroy()}. 
+
+Throws \ccode{eslEINVAL} if any pair of sequences have differing lengths
+(and thus cannot have been properly aligned). 
+\ccode{eslEDIVZERO} if some pair of sequences had no aligned
+residues. On failure, \ccode{D} and \ccode{V} are both returned \ccode{NULL}
+and state of inputs is unchanged.
+
+\ccode{eslEMEM} on allocation failure.
+
+
+\hypertarget{func:esl_dst_CAverageId()}
+{\item[int esl\_dst\_CAverageId(char **as, int N, int max\_comparisons, double *ret\_id)]}
+
+Calculates the average pairwise fractional identity in
+a multiple sequence alignment \ccode{as}, consisting of \ccode{N}
+aligned character sequences of identical length.
+
+If an exhaustive calculation would require more than
+\ccode{max\_comparisons} pairwise comparisons, then instead of
+looking at all pairs, calculate the average over a
+stochastic sample of \ccode{max\_comparisons} random pairs.
+This allows the routine to work efficiently even on very
+deep MSAs.
+
+Each fractional pairwise identity (range $[0..$ pid $..1]$
+is calculated using \ccode{esl\_dst\_CPairId()}.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_id} contains the average
+fractional identity.
+
+Throws \ccode{eslEMEM} on allocation failure.
+\ccode{eslEINVAL} if any of the aligned sequence pairs aren't 
+of the same length.
+In either case, \ccode{*ret\_id} is set to 0.
+
+
+\hypertarget{func:esl_dst_CAverageMatch()}
+{\item[int esl\_dst\_CAverageMatch(char **as, int N, int max\_comparisons, double *ret\_match)]}
+
+Calculates the average pairwise fractional matches in
+a multiple sequence alignment \ccode{as}, consisting of \ccode{N}
+aligned character sequences of identical length.
+
+If an exhaustive calculation would require more than
+\ccode{max\_comparisons} pairwise comparisons, then instead of
+looking at all pairs, calculate the average over a
+stochastic sample of \ccode{max\_comparisons} random pairs.
+This allows the routine to work efficiently even on very
+deep MSAs.
+
+Each fractional pairwise matches (range $[0..$ pid $..1]$
+is calculated using \ccode{esl\_dst\_CPairMatch()}.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_match} contains the average
+fractional matches.
+
+Throws \ccode{eslEMEM} on allocation failure.
+\ccode{eslEINVAL} if any of the aligned sequence pairs aren't 
+of the same length.
+In either case, \ccode{*ret\_match} is set to 0.
+
+
+\hypertarget{func:esl_dst_XAverageId()}
+{\item[int esl\_dst\_XAverageId(const ESL\_ALPHABET *abc, ESL\_DSQ **ax, int N, int max\_comparisons, double *ret\_id)]}
+
+Calculates the average pairwise fractional identity in
+a digital multiple sequence alignment \ccode{ax}, consisting of \ccode{N}
+aligned digital sequences of identical length.
+
+If an exhaustive calculation would require more than
+\ccode{max\_comparisons} pairwise comparisons, then instead of
+looking at all pairs, calculate the average over a
+stochastic sample of \ccode{max\_comparisons} random pairs.
+This allows the routine to work efficiently even on very
+deep MSAs.
+
+Each fractional pairwise identity (range $[0..$ pid $..1]$
+is calculated using \ccode{esl\_dst\_XPairId()}.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_id} contains the average
+fractional identity.
+
+Throws \ccode{eslEMEM} on allocation failure.
+\ccode{eslEINVAL} if any of the aligned sequence pairs aren't 
+of the same length.
+In either case, \ccode{*ret\_id} is set to 0.
+
+
+\hypertarget{func:esl_dst_XAverageMatch()}
+{\item[int esl\_dst\_XAverageMatch(const ESL\_ALPHABET *abc, ESL\_DSQ **ax, int N, int max\_comparisons, double *ret\_match)]}
+
+Calculates the average pairwise fractional matches in
+a digital multiple sequence alignment \ccode{ax}, consisting of \ccode{N}
+aligned digital sequences of identical length.
+
+If an exhaustive calculation would require more than
+\ccode{max\_comparisons} pairwise comparisons, then instead of
+looking at all pairs, calculate the average over a
+stochastic sample of \ccode{max\_comparisons} random pairs.
+This allows the routine to work efficiently even on very
+deep MSAs.
+
+Each fractional pairwise matches (range $[0..$ pid $..1]$
+is calculated using \ccode{esl\_dst\_XPairMatch()}.
+
+Returns \ccode{eslOK} on success, and \ccode{*ret\_match} contains the average
+fractional identity.
+
+Throws \ccode{eslEMEM} on allocation failure.
+\ccode{eslEINVAL} if any of the aligned sequence pairs aren't 
+of the same length.
+In either case, \ccode{*ret\_match} is set to 0.
+
+
+\end{sreapi}
+
