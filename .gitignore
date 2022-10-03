@@ -4,6 +4,7 @@ configure
 config.log
 config.status
 Makefile
+*.pdf
 *.o
 *.dSYM
 *.stamp
@@ -47,3 +48,18 @@ src/makehmmerdb
 src/nhmmer
 src/nhmmscan
 src/phmmer
+documentation/userguide/daemon.aux
+documentation/userguide/daemon.log
+documentation/userguide/daemon.out
+documentation/userguide/daemon.toc
+documentation/userguide/easel_manpages.tex
+documentation/userguide/latex.log
+documentation/userguide/main.aux
+documentation/userguide/main.bbl
+documentation/userguide/main.blg
+documentation/userguide/main.log
+documentation/userguide/main.out
+documentation/userguide/main.toc
+documentation/userguide/manpages.tex
+documentation/userguide/manpages_daemon.tex
+
