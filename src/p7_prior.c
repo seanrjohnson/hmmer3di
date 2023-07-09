@@ -42,11 +42,11 @@ p7_prior_CreateAmino(void)
   int k;
   int status;
 				/* default match mixture coefficients: [Sjolander96] */
-        /* calculated by esl-mixdchlet from 3Di profiles from AlphaFold for Pfam 35.0, Sean Johnson October 10, 2022 */
+        /* calculated by esl-mixdchlet from 3Di profiles from AlphaFold UniProt for Pfam 35.0, Sean Johnson October 10, 2022 */
   static double defmq[9] = {  0.0674, 0.0670, 0.0696, 0.1586, 0.0852, 0.0746, 0.1386, 0.0406, 0.2984 };
 
 				/* default match mixture Dirichlet components [Sjolander96] */
-        /* calculated by esl-mixdchlet from 3Di profiles from AlphaFold for Pfam 35.0, Sean Johnson October 10, 2022 */
+        /* calculated by esl-mixdchlet from 3Di profiles from AlphaFold UniProt for Pfam 35.0, Sean Johnson October 10, 2022 */
   static double defm[9][20] = {
     { 0.0717, 0.0008, 0.0812, 0.0327, 0.0959, 0.0041, 0.0034, 0.0006, 0.1050, 0.0023, 0.0005, 0.0005, 0.0075, 0.0252, 0.0009, 0.0006, 0.0007, 0.0012, 0.1320, 0.0012 },
     { 0.0374, 0.0007, 0.1979, 0.0144, 0.0120, 0.1212, 0.1412, 0.0027, 0.0004, 0.0018, 0.0001, 0.0075, 0.0185, 0.0067, 0.0519, 0.0046, 0.0403, 0.0014, 0.0013, 0.0751 },
@@ -86,8 +86,7 @@ p7_prior_CreateAmino(void)
   pri->td->alpha[0][0] = 0.9002; /* TDM */
   pri->td->alpha[0][1] = 0.5630; /* TDD */
 
-  /* Match emission priors are from Kimmen Sjolander, trained
-   * on the Blocks9 database. [Sjolander96]
+  /* Match emission priors 
    */  
   for (k = 0; k < 9; k++)
     {
@@ -99,7 +98,7 @@ p7_prior_CreateAmino(void)
   pri->ei->q[0] = 1.0;
   pri->ei->alpha[0][0]  = 322.;         /* A */
   pri->ei->alpha[0][1]  = 365.;         /* C */
-  pri->ei->alpha[0][2]  = 1357.;         /* D */
+  pri->ei->alpha[0][2]  = 1357.;        /* D */
   pri->ei->alpha[0][3]  = 145.;         /* E */
   pri->ei->alpha[0][4]  = 236.;         /* F */
   pri->ei->alpha[0][5]  = 265.;         /* G */
@@ -107,14 +106,14 @@ p7_prior_CreateAmino(void)
   pri->ei->alpha[0][7]  = 213.;         /* I */
   pri->ei->alpha[0][8]  = 199.;         /* K */
   pri->ei->alpha[0][9]  = 930.;         /* L */
-  pri->ei->alpha[0][10] = 89.;         /* M */
+  pri->ei->alpha[0][10] = 89.;          /* M */
   pri->ei->alpha[0][11] = 307.;         /* N */
   pri->ei->alpha[0][12] = 845.;         /* P */
   pri->ei->alpha[0][13] = 517.;         /* Q */
   pri->ei->alpha[0][14] = 327.;         /* R */
   pri->ei->alpha[0][15] = 879.;         /* S */
   pri->ei->alpha[0][16] = 178.;         /* T */
-  pri->ei->alpha[0][17] = 2182.;         /* V */
+  pri->ei->alpha[0][17] = 2182.;        /* V */
   pri->ei->alpha[0][18] = 210.;         /* W */
   pri->ei->alpha[0][19] = 160.;         /* Y */
 
