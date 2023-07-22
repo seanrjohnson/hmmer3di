@@ -1,50 +1,38 @@
-## HMMER - biological sequence analysis using profile HMMs
+## HMMER3Di - This is a fork of hmmer3.3.2 and easel 0.48 patched to support the Foldseek (3Di) alphabet
 
-[![](https://travis-ci.org/EddyRivasLab/hmmer.svg?branch=develop)](https://travis-ci.org/EddyRivasLab/hmmer)
 ![](http://img.shields.io/badge/license-BSD-brightgreen.svg)
-
-[HMMER](http://hmmer.org) searches biological sequence databases for
-homologous sequences, using either single sequences or multiple
-sequence alignments as queries. HMMER implements a technology called
-"profile hidden Markov models" (profile HMMs). HMMER is used by many
-protein family domain databases and large-scale annotation pipelines,
-including [Pfam](http://pfam.xfam.org) and other members of the
-[InterPro Consortium](http://www.ebi.ac.uk/interpro/).
-
-__This is a fork of hmmer3.3.2 and easel 0.48 patched to support the foldseek (3di) alphabet__
 
 
 __The original hmmer and easel repositories are here__
-To participate in HMMER development, visit us at
-[github](https://github.com/EddyRivasLab/hmmer).  HMMER development
-depends on the Easel library, also at
+
+[github](https://github.com/EddyRivasLab/hmmer). 
+
+and here:
 [github](https://github.com/EddyRivasLab/easel).
 
 
+## Install
 
 ```
    % git clone git@github.com:seanrjohnson/hmmer3di.git 
    % autoconf
    % ./configure --prefix /your/install/path
    % make
-   % make check                 # optional: run automated tests
-   % make install               # optional: install HMMER programs, man pages
-   % (cd easel; make install)   # optional: install Easel tools
+   % source copy_executables.sh 
+   % # copy executables will create a new directory called hmmer3Di, then it will copy
+   % # hmmalign, hmmbuild, hmmpress, hmmsearch, hmmscan, and phmmer into that directory
+   % # with 3Di_ added to the start of their names. From there you can execute them 
+   % # or copy them into your $PATH
 ``` 
 
-Executable programs will be installed in `/your/install/path/bin`. If
-you leave this optional `./configure` argument off, the default prefix
-is `/usr/local`.
+## Background frequencines for 3Di sequences can be found here
 
-Files to read in the source directory:
+[3Di_background_frequencies.txt](3Di_background_frequencies.txt)
 
-   * INSTALL - brief installation instructions.
-   * Userguide.pdf - the HMMER User's Guide.
- 
-To get started after installation, see the Tutorial section in the
-HMMER User's Guide (Userguide.pdf).
+## Dirichlet priors calculated from 3Di MSAs
+To generate a set of 3Di MSAs, we converted the AlphaFold UniProt Foldseek database (Jumper et al., 2021; van Kempen et al., 2023; Varadi et al., 2022) to a 3Di fasta file. We then looked up every sequence name from the Pfam 35 seed file in the UniProt 3Di fasta file and, for cases where the corresponding sequence was identifiable, extracted the sub-sequence corresponding to the Pfam 35 seed. 3Di seeds from each profile were aligned using MAFFT. MSA columns with more than 10 rows were used to calculate background frequencies and Dirichlet priors using the HMMER3 program esl-mixdchlet fit with options -s 17 9 20. 
+[pfam_35_3Di_msa_counts_lb_10.mixdchlet.txt](pfam_35_3Di_msa_counts_lb_10.mixdchlet.txt)
 
+## Changes made to support the 3Di alphabet
 
-# Guide for adding a new alphabet 
-
-
+A full list of changes can be seen in the following diff:
