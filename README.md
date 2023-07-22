@@ -36,3 +36,4 @@ To generate a set of 3Di MSAs, we converted the AlphaFold UniProt Foldseek datab
 ## Changes made to support the 3Di alphabet
 
 A full list of changes can be seen in the following diff:
+[https://github.com/seanrjohnson/hmmer3di/compare/2637afc..87a5d15](https://github.com/seanrjohnson/hmmer3di/compare/2637afc..87a5d15)
