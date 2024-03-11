@@ -3,6 +3,12 @@
 ![](http://img.shields.io/badge/license-BSD-brightgreen.svg)
 
 
+This program was used in the work:
+
+Johnson, Sean R., et al. “Sensitive Remote Homology Search by Local Alignment of Small Positional Embeddings from Protein Language Models.” eLife, vol. 12, Feb. 2024. elifesciences.org, https://doi.org/10.7554/eLife.91415.2.
+
+
+
 __The original hmmer and easel repositories are here__
 
 [github](https://github.com/EddyRivasLab/hmmer). 
