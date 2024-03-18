@@ -7,7 +7,7 @@ This program was used in the work:
 
 Johnson, Sean R., et al. “Sensitive Remote Homology Search by Local Alignment of Small Positional Embeddings from Protein Language Models.” eLife, vol. 12, Feb. 2024. elifesciences.org, https://doi.org/10.7554/eLife.91415.2.
 
-
+Note that this patched version of HMMER doesn't seem to perform any better on 3Di sequences than the original (amino acid tuned) version. I'm not sure exactly why.
 
 __The original hmmer and easel repositories are here__
 
